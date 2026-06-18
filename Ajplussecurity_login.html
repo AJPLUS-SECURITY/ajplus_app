@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AJPLUS SECURITY — Ingia</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy:  #0a1628;
+      --navy2: #0f2140;
+      --gold:  #EABF0B;
+      --red:   #e83a3a;
+      --teal:  #0fa894;
+      --text:  #1e293b;
+      --muted: #64748b;
+      --bdr:   #e2e8f0;
+      --card:  #ffffff;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(234,191,11,0.03) 0px,
+        rgba(234,191,11,0.03) 1px,
+        transparent 1px,
+        transparent 40px
+      );
+      pointer-events: none;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .orb-1 { width:400px; height:400px; background:var(--gold); opacity:0.12; top:-100px; right:-100px; }
+    .orb-2 { width:300px; height:300px; background:var(--teal); opacity:0.10; bottom:-80px; left:-80px; }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 44px 40px 40px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    /* ===== BRAND ===== */
+    .brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .brand-logo {
+      width: 58px; height: 58px;
+      background: var(--navy);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 27px;
+      margin: 0 auto 14px;
+      border: 2px solid var(--gold);
+    }
+    .brand-logo-wrap {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:4px;
+}
+.brand-logo-img {
+  width:80px;
+  height:80px;
+  object-fit:contain;
+  animation:floatLogo 4s ease-in-out infinite, glowLogo 4s ease-in-out infinite;
+  filter:drop-shadow(0 4px 16px rgba(234,191,11,0.4));
+}
+    .brand h1 {
+      font-size: 21px; font-weight: 800;
+      color: var(--navy); letter-spacing: 0.5px;
+    }
+    .brand p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ===== SMART LOGIN INFO BOX ===== */
+    .info-box {
+      background: rgba(234,191,11,0.08);
+      border: 1px solid rgba(234,191,11,0.25);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 12.5px;
+      color: #78560a;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
+    }
+
+    /* ===== FORM ===== */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--muted); margin-bottom: 6px;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-icon {
+      position: absolute; left: 13px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px; pointer-events: none; opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+    .input-wrap:focus-within .input-icon { opacity: 0.8; }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 12px 40px 12px 40px;
+      border: 1.5px solid var(--bdr);
+      border-radius: 10px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px; color: var(--text);
+      background: white; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-wrap input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(10,22,40,0.08);
+    }
+    .input-wrap input::placeholder { color: #cbd5e1; }
+
+    .eye-btn {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      font-size: 17px; color: var(--muted);
+    }
+
+    /* ===== ROLE INDICATOR (appears after login starts) ===== */
+    .role-chip {
+      display: none;
+      align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: rgba(234,191,11,0.08);
+      border: 1px solid rgba(234,191,11,0.25);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px; font-weight: 700;
+      color: #78560a;
+      animation: chipIn 0.3s ease;
+    }
+    .role-chip.show { display: flex; }
+    @keyframes chipIn {
+      from { opacity:0; transform:translateY(-6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .role-chip .dot {
+      width: 8px; height: 8px;
+      background: var(--teal); border-radius: 50%;
+      margin-left: auto;
+      animation: blink 1.4s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ===== BUTTON ===== */
+    .login-btn {
+      width: 100%; padding: 14px;
+      background: var(--navy); color: white;
+      border: none; border-radius: 10px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.5px;
+      transition: all 0.2s;
+      display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+    }
+    .login-btn:hover:not(:disabled) {
+      background: var(--gold); color: var(--navy);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(234,191,11,0.35);
+    }
+    .login-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .login-btn:disabled .spinner  { display: inline-block; }
+    .login-btn:disabled .btn-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== MESSAGES ===== */
+    .msg {
+      margin-top: 14px; padding: 11px 14px;
+      border-radius: 9px; font-size: 13px;
+      font-weight: 600; display: none;
+      align-items: center; gap: 9px;
+      line-height: 1.5;
+    }
+    .msg.error   { background:rgba(232,58,58,0.09);  color:#b92929; border-left:3px solid var(--red);  display:flex; }
+    .msg.success { background:rgba(15,168,148,0.09); color:#0d6b5e; border-left:3px solid var(--teal); display:flex; }
+    .msg.info    { background:rgba(234,191,11,0.09); color:#78560a; border-left:3px solid var(--gold); display:flex; }
+    .msg.hidden  { display:none !important; }
+
+    /* ===== FOOTER ===== */
+    .card-footer {
+      margin-top: 22px; padding-top: 18px;
+      border-top: 1px solid var(--bdr);
+      text-align: center; font-size: 11.5px; color: var(--muted);
+    }
+    .card-footer a { color: var(--gold); font-weight: 700; text-decoration: none; }
+    .card-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 22px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="card">
+
+  <div class="brand">
+     <div class="brand-logo-wrap">
+      <img src="image/ajpluslogo.png" alt="AJPLUS Logo" class="brand-logo-img"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="brand-logo-fallback" style="display:none;">🛡️</div>
+    </div>
+    <h1>AJPLUS SECURITY</h1>
+    <p>Mfumo wa Usalama wa Kisasa</p>
+    
+  </div>
+
+  <!-- Smart login info -->
+  <div class="info-box">
+    🔐 Weka email na neno la siri tu — mfumo utakutambua mwenyewe na kukupeleka mahali pako.
+  </div>
+
+  <!-- Role detected (shown during login) -->
+  <div class="role-chip" id="roleChip">
+    <span id="roleChipIcon">👤</span>
+    <span id="roleChipText">Akaunti imetambuliwa</span>
+    <span class="dot"></span>
+  </div>
+
+  <!-- Email -->
+  <div class="form-group">
+    <label>Email / Namba ya Ajira</label>
+    <div class="input-wrap">
+      <span class="input-icon">✉️</span>
+      <input type="text" id="emailInput"
+             placeholder="jina@ajplus.co.tz"
+             autocomplete="email"
+             onkeydown="if(event.key==='Enter') document.getElementById('passwordInput').focus()">
+    </div>
+  </div>
+
+  <!-- Password -->
+  <div class="form-group">
+    <label>Neno la Siri</label>
+    <div class="input-wrap">
+      <span class="input-icon">🔒</span>
+      <input type="password" id="passwordInput"
+             placeholder="••••••••"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()">
+      <button class="eye-btn" type="button" onclick="togglePass()">👁️</button>
+    </div>
+  </div>
+
+  <!-- Login button -->
+  <button class="login-btn" id="loginBtn" onclick="doLogin()">
+    <span class="spinner"></span>
+    <span class="btn-text">INGIA SASA →</span>
+  </button>
+
+  <!-- Status message -->
+  <div class="msg hidden" id="statusMsg"></div>
+
+  <!-- Footer -->
+  <div class="card-footer">
+    Mteja mpya? <a href="client-register.html">Jisajili hapa →</a>
+    <br><br>
+    Tatizo la kuingia? Wasiliana na <strong>Admin wa AJPLUS</strong>
+  </div>
+
+</div><!-- end .card -->
+
+<script src="firebase-config.js"></script>
+<script>
+/* ================================================================
+   AJPLUS LOGIN — ILIYOSAHIHISHWA KIKAMILIFU
+
+   MATATIZO YALIYOREKEBISHWA:
+   ✅ BUG #1: verifyRoleAndRedirect() haikufungwa — } ilipotea
+              redirectTo() na handleLoginError() walikuwa NDANI yake
+              sasa zimetenganishwa vizuri
+   ✅ BUG #2: URL za redirect zilikuwa mbaya:
+              "admin_dashboard.html" → "admin.html"
+              "client_dashboard.html" → "mteja_dashboard.html"
+   ✅ BUG #3: Status check haikuwepo — pending clients wangeweza kuingia
+   ✅ BUG #4: setLoading(false) haikuitwa wakati wa kosa la DB
+   ✅ BUG #5: Role selector iliondolewa — mfumo unasoma role kutoka DB
+
+   JINSI INAVYOFANYA KAZI (Smart Auto-Detection):
+   1. Mtumiaji anaandika email + password tu
+   2. Firebase Auth inathbitisha
+   3. Mfumo unasoma users/{UID} kutoka Database
+   4. Inaangalia status (active/pending/rejected/suspended)
+   5. Inaangalia role (admin/guard/supervisor/client)
+   6. Inaelekeza kwenye dashboard sahihi
+================================================================ */
+
+/* ==================================================
+   REDIRECT MAP — Badilisha URL hapa kama inahitajika
+================================================== */
+const ROLE_REDIRECTS = {
+  admin:      'admin.html',
+  guard:      'guard_dashboard.html',
+  supervisor: 'supervisor_dashboard.html',
+  client:     'mteja_dashboard.html',
+};
+
+/* ==================================================
+   ROLE DISPLAY CONFIG
+================================================== */
+const ROLE_UI = {
+  admin:      { icon: '👨‍💼', text: 'Administrator — Inaelekeza...' },
+  guard:      { icon: '🛡️',  text: 'Guard / Mlinzi — Inaelekeza...' },
+  supervisor: { icon: '👷',  text: 'Supervisor — Inaelekeza...' },
+  client:     { icon: '🏢',  text: 'Mteja / Client — Inaelekeza...' },
+};
+
+/* ==================================================
+   ERROR MESSAGES
+================================================== */
+const ERR = {
+  'auth/user-not-found':         '❌ Akaunti haipo. Angalia email au wasiliana na Admin.',
+  'auth/wrong-password':         '❌ Neno la siri si sahihi. Jaribu tena.',
+  'auth/invalid-credential':     '❌ Email au neno la siri si sahihi.',
+  'auth/invalid-email':          '❌ Muundo wa email si sahihi.',
+  'auth/too-many-requests':      '⏳ Majaribio mengi. Subiri dakika 5.',
+  'auth/network-request-failed': '📶 Hakuna mtandao. Angalia internet yako.',
+  'auth/user-disabled':          '🚫 Akaunti yako imezuiwa. Wasiliana na Admin.',
+};
+
+/* ==================================================
+   STATE
+================================================== */
+let isLoading = false;
+
+/* ==================================================
+   UI HELPERS
+================================================== */
+function setLoading(on) {
+  isLoading = on;
+  document.getElementById('loginBtn').disabled = on;
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+
+function hideMsg() {
+  document.getElementById('statusMsg').className = 'msg hidden';
+}
+
+function showRoleChip(role) {
+  const ui  = ROLE_UI[role] || { icon: '👤', text: 'Akaunti imetambuliwa' };
+  const chip = document.getElementById('roleChip');
+  document.getElementById('roleChipIcon').textContent = ui.icon;
+  document.getElementById('roleChipText').textContent = ui.text;
+  chip.classList.add('show');
+}
+
+function togglePass() {
+  const inp = document.getElementById('passwordInput');
+  const btn = document.querySelector('.eye-btn');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+/* ==================================================
+   STEP 1 — FIREBASE AUTH
+================================================== */
+function doLogin() {
+  if (isLoading) return;
+
+  const email    = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value.trim();
+
+  /* Validation */
+  if (!email) {
+    showMsg('❌ Andika email yako.', 'error');
+    document.getElementById('emailInput').focus();
+    return;
+  }
+  if (!password) {
+    showMsg('❌ Andika neno la siri.', 'error');
+    document.getElementById('passwordInput').focus();
+    return;
+  }
+  if (password.length < 6) {
+    showMsg('❌ Neno la siri ni fupi sana (angalau herufi 6).', 'error');
+    return;
+  }
+
+  hideMsg();
+  setLoading(true);
+
+  /* Try direct email */
+  firebase.auth()
+    .signInWithEmailAndPassword(email, password)
+    .then(cred => verifyRoleAndRedirect(cred.user))
+    .catch(err => {
+      /* If not valid email format, try as staff ID */
+      if (
+        err.code === 'auth/invalid-email' ||
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/invalid-credential'
+      ) {
+        if (!email.includes('@')) {
+          /* Convert staff ID to email: AJP-G-001 → ajp-g-001@ajplus.co.tz */
+          const converted = email.toLowerCase().replace(/\s+/g, '') + '@ajplus.co.tz';
+          firebase.auth()
+            .signInWithEmailAndPassword(converted, password)
+            .then(cred => verifyRoleAndRedirect(cred.user))
+            .catch(() => handleLoginError(err)); /* Show original error */
+          return;
+        }
+      }
+      handleLoginError(err);
+    });
+}
+
+/* ==================================================
+   STEP 2 — VERIFY ROLE FROM DATABASE & REDIRECT
+
+   SAHIHISHO: function sasa imefungwa vizuri.
+   redirectTo() na handleLoginError() zipo NJE yake.
+================================================== */
+function verifyRoleAndRedirect(user) {
+  const db = firebase.database();
+
+  db.ref('users/' + user.uid)
+    .once('value')
+    .then(snap => {
+      const data = snap.val();
+
+      /* User record not found in DB */
+      if (!data) {
+        /* Try clients node as fallback */
+        db.ref('clients/' + user.uid).once('value').then(cSnap => {
+          if (cSnap.val()) {
+            checkStatusAndRedirect(user, cSnap.val());
+          } else {
+            firebase.auth().signOut();
+            setLoading(false);
+            showMsg('❌ Akaunti haikupatikana kwenye mfumo. Wasiliana na Admin.', 'error');
+          }
+        });
+        return;
+      }
+
+      checkStatusAndRedirect(user, data);
+    })
+    .catch(err => {
+      /* DB read failed */
+      setLoading(false);
+      showMsg('❌ Tatizo la mtandao wakati wa kusoma data. Jaribu tena.', 'error');
+      console.error('DB error:', err);
+    });
+  /* ← function inafungwa hapa sahihi */
+}
+
+/* ==================================================
+   STEP 3 — CHECK STATUS THEN REDIRECT
+
+   Hii inaangalia:
+   - status: pending → block
+   - status: rejected → block
+   - status: suspended → block
+   - role: inapeleka dashboard sahihi
+================================================== */
+function checkStatusAndRedirect(user, data) {
+  const role   = (data.role   || '').toLowerCase().trim();
+  const status = (data.status || '').toLowerCase().trim();
+
+  /* --- Status checks --- */
+  if (status === 'pending') {
+    firebase.auth().signOut();
+    setLoading(false);
+    showMsg(
+      '⏳ Akaunti yako inasubiri idhini ya Admin. Utaariwa hivi karibuni.',
+      'info'
+    );
+    return;
+  }
+
+  if (status === 'rejected') {
+    firebase.auth().signOut();
+    setLoading(false);
+    showMsg(
+      '❌ Ombi lako lilikataliwa. Wasiliana na ofisi ya AJPLUS kwa maelezo.',
+      'error'
+    );
+    return;
+  }
+
+  if (status === 'suspended') {
+    firebase.auth().signOut();
+    setLoading(false);
+    showMsg(
+      '🚫 Akaunti yako imesimamishwa. Wasiliana na Admin.',
+      'error'
+    );
+    return;
+  }
+
+  /* --- Role check --- */
+  const target = ROLE_REDIRECTS[role];
+
+  if (!target) {
+    firebase.auth().signOut();
+    setLoading(false);
+    showMsg(
+      `❌ Role "${role || 'haijawekwa'}" haijulikani. Wasiliana na Admin.`,
+      'error'
+    );
+    return;
+  }
+
+  /* --- SUCCESS: Show role chip then redirect --- */
+  showRoleChip(role);
+  showMsg(`✅ Karibu! Inaelekeza kwenye dashboard yako...`, 'success');
+
+  setTimeout(() => {
+    window.location.href = target;
+  }, 1200);
+}
+
+/* ==================================================
+   ERROR HANDLER — Ipo NJE ya verifyRoleAndRedirect()
+   (Hii ndiyo ilikuwa BUG kubwa — ilikuwa ndani ya function)
+================================================== */
+function handleLoginError(err) {
+  setLoading(false);
+  const msg = ERR[err.code] || ('❌ Kosa: ' + (err.message || 'Imeshindwa kuingia.'));
+  showMsg(msg, 'error');
+  console.error('Login error:', err.code, err.message);
+}
+
+/* ==================================================
+   AUTO-REDIRECT — Kama tayari ameingia
+================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof firebase === 'undefined') {
+    showMsg('⚠️ firebase-config.js haikupatikana! Angalia faili lako.', 'error');
+    return;
+  }
+
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      /* Already logged in — silently verify and redirect */
+      setLoading(true);
+      verifyRoleAndRedirect(user);
+    }
+  });
+});
+</script>
+</body>
+</html>
