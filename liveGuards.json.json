@@ -1,0 +1,20 @@
+{
+  "liveGuards": {
+    "guard1": {
+      "lat": -6.9000,
+      "lng": 39.2083,
+      "name": "Hamisi Juma",
+      "phone": "0712345678",
+      "site": "Kariakoo"
+    },
+    "guard2": {
+      "lat": -6.8120,
+      "lng": 39.2800,
+      "name": "John Mfoi",
+      "phone": "0655000000",
+      "site": "Posta"
+    }
+  }
+}
+
+       

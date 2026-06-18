@@ -1,0 +1,13 @@
+{
+   
+      "report1": {
+        "guard": "Hamisi",
+        "site": "Kariakoo",
+        "type": "Patrol",
+        "status": "Safe",
+        "message": "Doria imekamilika",
+        "lat": -6.81,
+        "lng": 39.28,
+        "timestamp": 1747383838
+      }
+}
