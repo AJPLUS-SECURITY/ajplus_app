@@ -1,24 +1,363 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AJPLUS Security</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; text-align:center; padding:50px; background:#0f172a; color:white; }
-    .btn { padding:15px 30px; margin:15px; font-size:18px; border:none; border-radius:10px; cursor:pointer; }
-    .admin-btn { background:#EABF0B; color:black; }
-    .guard-btn { background:#22c55e; color:black; }
-    .client-btn { background:#3b82f6; color:black; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ================== SEO / META ================== -->
+<title>AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi Tanzania</title>
+<meta name="description" content="AJPLUS Security ni mfumo wa kidijitali wa usimamizi wa walinzi (guard management) Tanzania — doria, taarifa za matukio (OB), ufuatiliaji wa GPS, na huduma za ulinzi kwa wateja na makampuni.">
+<meta name="keywords" content="AJPLUS Security, usalama Tanzania, security guard management, mlinzi, ulinzi Dar es Salaam, guard tracking system, occurrence book digital">
+<meta name="author" content="AJ PLUS COMPANY LIMITED">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://ajplussecurity.co.tz/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi">
+<meta property="og:description" content="Mfumo wa kidijitali wa usimamizi wa walinzi, doria, na taarifa za matukio kwa makampuni ya ulinzi Tanzania.">
+<meta property="og:url" content="https://ajplussecurity.co.tz/">
+<meta property="og:image" content="https://ajplussecurity.co.tz/images/ajpluslogo.png">
+<meta property="og:locale" content="sw_TZ">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi">
+<meta name="twitter:description" content="Mfumo wa kidijitali wa usimamizi wa walinzi Tanzania.">
+<meta name="twitter:image" content="https://ajplussecurity.co.tz/images/ajpluslogo.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "AJPLUS Security",
+  "url": "https://ajplussecurity.co.tz",
+  "logo": "https://ajplussecurity.co.tz/images/ajpluslogo.png",
+  "description": "Mfumo wa kidijitali wa usimamizi wa walinzi, doria, na taarifa za matukio kwa makampuni ya ulinzi Tanzania.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "TZ",
+    "addressLocality": "Dar es Salaam"
+  },
+  "parentOrganization": {
+    "@type": "Organization",
+    "name": "AJ PLUS COMPANY LIMITED"
+  }
+}
+</script>
+
+<link rel="icon" type="image/png" href="images/ajpluslogo.png">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Sora:ital,wght@0,400;0,600;1,400;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --navy:#060d1a;
+    --navy2:#0c1829;
+    --gold:#EABF0B;
+    --gold2:#f5d44a;
+    --white:#f0f4ff;
+    --muted:#8a98b8;
+    --red:#c0392b;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+
+  html,body{
+    height:100%;
+    overflow:hidden;
+    font-family:'Sora',sans-serif;
+  }
+
+  body{
+    background:var(--navy);
+    color:var(--white);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+
+  .bg-glow{
+    position:fixed;inset:0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 28%, rgba(234,191,11,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 35% at 85% 85%, rgba(192,57,43,0.10) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 35% at 15% 85%, rgba(15,168,148,0.08) 0%, transparent 70%),
+      var(--navy);
+    z-index:0;
+  }
+
+  .vignette{
+    position:fixed;inset:0;
+    background:radial-gradient(ellipse 80% 80% at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%);
+    z-index:1;
+    pointer-events:none;
+  }
+
+  .splash{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:20px;
+    animation:fadeContainer 0.6s ease both;
+  }
+
+  @keyframes fadeContainer{
+    from{opacity:0;}
+    to{opacity:1;}
+  }
+
+  .logo-ring-wrap{
+    position:relative;
+    width:176px;height:176px;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .logo-ring{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    border:2px solid transparent;
+    border-top-color:var(--gold);
+    border-right-color:rgba(234,191,11,0.3);
+    animation:spinRing 1.6s linear infinite;
+  }
+
+  .logo-ring.delay{
+    inset:16px;
+    border-top-color:rgba(192,57,43,0.55);
+    border-right-color:transparent;
+    animation:spinRing 2.3s linear infinite reverse;
+  }
+
+  @keyframes spinRing{
+    to{transform:rotate(360deg);}
+  }
+
+  .logo-core{
+    width:148px;height:148px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #0e1b30, var(--navy2) 70%);
+    border:1px solid rgba(234,191,11,0.25);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 44px rgba(234,191,11,0.32), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.4);
+    animation:floatLogo 3.2s ease-in-out infinite, glowPulse 3.2s ease-in-out infinite;
+    z-index:1;
+    overflow:hidden;
+    padding:14px;
+  }
+
+  .logo-core img{
+    width:100%;height:100%;
+    object-fit:contain;
+  }
+
+  .logo-core .fallback-icon{
+    font-size:54px;
+    display:none;
+  }
+
+  @keyframes floatLogo{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-8px);}
+  }
+
+  @keyframes glowPulse{
+    0%,100%{box-shadow:0 0 36px rgba(234,191,11,0.26), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.4);}
+    50%{box-shadow:0 0 60px rgba(234,191,11,0.5), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.4);}
+  }
+
+  .brand-text{
+    text-align:center;
+    animation:riseUp 0.7s ease 0.15s both;
+  }
+
+  @keyframes riseUp{
+    from{opacity:0;transform:translateY(14px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+
+  .brand-text h1{
+    font-family:'Cinzel',serif;
+    font-size:30px;
+    font-weight:700;
+    letter-spacing:2.5px;
+    color:var(--white);
+  }
+
+  .brand-text h1 span{
+    color:var(--gold);
+    font-weight:800;
+  }
+
+  .brand-text p{
+    font-style:italic;
+    font-weight:400;
+    font-size:13px;
+    font-family:'Sora',sans-serif;
+    letter-spacing:1.2px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+
+  .load-bar-wrap{
+    width:230px;
+    height:4px;
+    background:rgba(255,255,255,0.08);
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:10px;
+  }
+
+  .load-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold));
+    border-radius:10px;
+    animation:loadProgress 2.6s ease forwards;
+  }
+
+  @keyframes loadProgress{
+    0%{width:0%;}
+    100%{width:100%;}
+  }
+
+  .status-text{
+    font-style:italic;
+    font-size:12px;
+    color:var(--muted);
+    font-family:'Sora',sans-serif;
+    letter-spacing:0.4px;
+    margin-top:2px;
+  }
+
+  .splash-wrap{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  .splash-wrap.leaving{
+    opacity:0;
+    transform:scale(1.03);
+  }
+</style>
 </head>
 <body>
-  <h1>🛡️ AJPLUS SECURITY SYSTEM</h1>
-  <p>Professional Security Management</p>
-  
-  <a href="Ajplussecurity_login.html"><button class="btn admin-btn">👨‍💼 Ingia kama Admin</button></a>
-  <a href="Ajplussecurity_login.html"><button class="btn guard-btn">🛡️ Ingia kama Mlinzi</button></a>
-  <a href="Ajplussecurity_login.html"><button class="btn client-btn"> 👥 Ingia kama Mteja</button></a>
+
+<div class="bg-glow"></div>
+<div class="vignette"></div>
+
+<div class="splash-wrap" id="splashWrap">
+  <div class="splash">
+
+    <div class="logo-ring-wrap">
+      <div class="logo-ring"></div>
+      <div class="logo-ring delay"></div>
+      <div class="logo-core">
+        <img src="images/ajpluslogo.png" alt="AJPLUS Security Logo"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <span class="fallback-icon">🛡️</span>
+      </div>
+    </div>
+
+    <div class="brand-text">
+      <h1>AJPLUS <span>SECURITY</span></h1>
+      <p>Command &amp; Control System</p>
+    </div>
+
+    <div class="load-bar-wrap">
+      <div class="load-bar"></div>
+    </div>
+    <div class="status-text" id="statusText">Inaanzisha mfumo...</div>
+
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script>
+const ROLE_REDIRECTS = {
+  admin:      'admin.html',
+  guard:      'guard_dashboard.html',
+  supervisor: 'supervisor_dashboard.html',
+  client:     'mteja_dashboard.html',
+};
+
+const MIN_SPLASH_TIME = 2600;
+const startTime = Date.now();
+
+function goTo(url) {
+  const wrap = document.getElementById('splashWrap');
+  wrap.classList.add('leaving');
+  setTimeout(() => { window.location.href = url; }, 420);
+}
+
+function finishSplash(targetUrl) {
+  const elapsed = Date.now() - startTime;
+  const wait = Math.max(0, MIN_SPLASH_TIME - elapsed);
+  setTimeout(() => goTo(targetUrl), wait);
+}
+
+function setStatus(msg) {
+  const el = document.getElementById('statusText');
+  if (el) el.textContent = msg;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof firebase === 'undefined') {
+    setStatus('Tatizo la mfumo — inaelekeza...');
+    finishSplash('Ajplussecurity_login.html');
+    return;
+  }
+
+  let db;
+  try { db = firebase.database(); } catch(e) {
+    finishSplash('Ajplussecurity_login.html');
+    return;
+  }
+
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user) {
+      setStatus('Inaelekeza kwenye login...');
+      finishSplash('Ajplussecurity_login.html');
+      return;
+    }
+
+    setStatus('Inathibitisha akaunti...');
+
+    db.ref('users/' + user.uid).once('value')
+      .then(snap => {
+        const data   = snap.val() || {};
+        const role   = (data.role   || '').toLowerCase().trim();
+        const status = (data.status || '').toLowerCase().trim();
+
+        if (status === 'pending' || status === 'rejected' || status === 'suspended') {
+          setStatus('Akaunti inahitaji uangalizi...');
+          finishSplash('Ajplussecurity_login.html');
+          return;
+        }
+
+        const target = ROLE_REDIRECTS[role];
+        if (!target) {
+          setStatus('Inaelekeza kwenye login...');
+          finishSplash('Ajplussecurity_login.html');
+          return;
+        }
+
+        setStatus('Karibu tena!');
+        finishSplash(target);
+      })
+      .catch(() => {
+        setStatus('Inaelekeza kwenye login...');
+        finishSplash('Ajplussecurity_login.html');
+      });
+  });
+});
+</script>
 </body>
 </html>
