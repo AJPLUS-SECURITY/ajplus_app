@@ -1,0 +1,2733 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OB System | AJPLUS Security</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+  <style>
+    /* ===================== VARIABLES ===================== */
+    :root {
+      --primary:    #0f2240;
+      --primary2:   #16213e;
+      --accent:     #e94560;
+      --accent2:    #38bdf8;
+      --success:    #10b981;
+      --warning:    #f59e0b;
+      --danger:     #ef4444;
+      --purple:     #8b5cf6;
+      --teal:       #14b8a6;
+      --bg:         #f0f2f5;
+      --card:       #ffffff;
+      --text:       #1e293b;
+      --text-light: #64748b;
+      --border:     #e2e8f0;
+      --shadow:     0 4px 16px rgba(0,0,0,0.07);
+      --radius:     14px;
+      --transition: 0.25s ease;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===================== TOPBAR ===================== */
+    .topbar {
+      background: var(--primary);
+      color: white;
+      height: 62px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 500;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.3px;
+    }
+    .topbar-brand .ob-label {
+      background: var(--accent);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .guard-chip {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .clock-display {
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent2);
+    }
+
+    /* ===================== GPS STATUS BAR ===================== */
+    .gps-status-bar {
+      background: linear-gradient(135deg, var(--primary2), #1e3a5f);
+      color: white;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .gps-status-bar .gps-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gps-status-bar .gps-label {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .gps-status-bar .gps-coords {
+      font-size: 12px;
+      opacity: 0.8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gps-badge {
+      background: rgba(16,185,129,0.2);
+      border: 1px solid var(--success);
+      color: #6ee7b7;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .gps-badge.off {
+      background: rgba(239,68,68,0.2);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    .gps-badge.searching {
+      background: rgba(245,158,11,0.2);
+      border-color: var(--warning);
+      color: #fcd34d;
+      animation: gpsSearch 1.5s infinite;
+    }
+
+    @keyframes gpsSearch {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.5; }
+    }
+
+    .online-dot {
+      width: 8px; height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      display: inline-block;
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    /* ===================== TAB NAV ===================== */
+    .tab-nav {
+      background: var(--primary2);
+      display: flex;
+      overflow-x: auto;
+      gap: 2px;
+      padding: 8px 16px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tab-nav::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      padding: 9px 16px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: var(--transition);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 12px rgba(233,69,96,0.3);
+    }
+
+    /* ===================== CONTAINER ===================== */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 50px;
+    }
+
+    /* ===================== SECTION ===================== */
+    .tab-section { display: none; }
+    .tab-section.active {
+      display: block;
+      animation: fadeUp 0.3s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(12px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ===================== SECTION HEADER ===================== */
+    .sec-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .sec-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .sec-subtitle { font-size: 13px; color: var(--text-light); }
+
+    /* ===================== CARD ===================== */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ===================== FORM ===================== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-grid.cols-1 { grid-template-columns: 1fr; }
+
+    @media (max-width: 600px) {
+      .form-grid,
+      .form-grid.cols-3 { grid-template-columns: 1fr; }
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-light);
+    }
+
+    label .req { color: var(--accent); margin-left: 2px; }
+
+    input[type="text"],
+    input[type="time"],
+    input[type="date"],
+    input[type="tel"],
+    input[type="file"],
+    select,
+    textarea {
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    input[type="file"] {
+      padding: 8px 13px;
+      cursor: pointer;
+      background: #f8fafc;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+    }
+
+    textarea { height: 80px; resize: vertical; }
+
+    /* ===================== PHOTO PREVIEW ===================== */
+    .photo-preview-wrap {
+      display: none;
+      margin-top: 8px;
+      position: relative;
+    }
+    .photo-preview-wrap img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 9px;
+      border: 2px solid var(--accent2);
+    }
+    .photo-preview-wrap .remove-photo {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 26px; height: 26px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    /* ===================== UPLOAD PROGRESS ===================== */
+    .upload-progress {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-top: 8px;
+      display: none;
+    }
+    .upload-bar {
+      height: 100%;
+      background: var(--accent2);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .upload-label {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-top: 4px;
+      display: none;
+    }
+
+    /* ===================== BUTTONS ===================== */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .btn {
+      padding: 11px 22px;
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); opacity: 0.9; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .btn-accent   { background: var(--accent);   color: white; }
+    .btn-primary  { background: var(--primary);  color: white; }
+    .btn-success  { background: var(--success);  color: white; }
+    .btn-warning  { background: var(--warning);  color: #1e293b; }
+    .btn-danger   { background: var(--danger);   color: white; }
+    .btn-purple   { background: var(--purple);   color: white; }
+    .btn-teal     { background: var(--teal);     color: white; }
+    .btn-outline  {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--accent2); background: rgba(56,189,248,0.05); }
+
+    .btn-sm { padding: 6px 13px; font-size: 12px; border-radius: 7px; }
+
+    /* ===================== TABLE ===================== */
+    .table-wrap {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    thead { background: #f8fafc; }
+    th {
+      text-align: left;
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-light);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr { transition: var(--transition); }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ===================== BADGE ===================== */
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .badge-in      { background: rgba(16,185,129,0.12);  color: var(--success); }
+    .badge-out     { background: rgba(239,68,68,0.12);   color: var(--danger); }
+    .badge-inside  { background: rgba(56,189,248,0.12);  color: #0284c7; }
+    .badge-normal  { background: rgba(100,116,139,0.12); color: var(--text-light); }
+    .badge-urgent  { background: rgba(233,69,96,0.12);   color: var(--accent); }
+    .badge-purple  { background: rgba(139,92,246,0.12);  color: var(--purple); }
+    .badge-teal    { background: rgba(20,184,166,0.12);  color: var(--teal); }
+    .badge-warning { background: rgba(245,158,11,0.12);  color: var(--warning); }
+    .badge-danger  { background: rgba(239,68,68,0.12);   color: var(--danger); }
+    .badge-gps     { background: rgba(16,185,129,0.12);  color: var(--success); }
+
+    /* ===================== STATS ROW ===================== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat-chip {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-chip .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); font-weight: 700; }
+    .stat-chip .count { font-size: 28px; font-weight: 800; color: var(--primary); line-height: 1; }
+
+    /* ===================== ALERT STRIP ===================== */
+    .alert-strip {
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .alert-info    { background: rgba(56,189,248,0.1);  border-left: 4px solid var(--accent2); color: #0284c7; }
+    .alert-warning { background: rgba(245,158,11,0.1);  border-left: 4px solid var(--warning); color: #b45309; }
+    .alert-danger  { background: rgba(233,69,96,0.1);   border-left: 4px solid var(--accent);  color: var(--accent); }
+
+    /* ===================== EMPTY STATE ===================== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ===================== TOAST ===================== */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: white;
+      padding: 11px 26px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 9999;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+      animation: toastIn 0.3s ease;
+      white-space: nowrap;
+    }
+    .toast.success { background: var(--success); }
+    .toast.danger  { background: var(--danger); }
+    .toast.warning { background: var(--warning); color: #1e293b; }
+    @keyframes toastIn {
+      from { opacity:0; transform: translateX(-50%) translateY(14px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ===================== SPINNER ===================== */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===================== LIVE MAP CARD ===================== */
+    .map-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .map-card-header {
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .map-card-header .map-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #liveMap {
+      width: 100%;
+      height: 300px;
+      background: #e8f0fe;
+    }
+
+    .map-no-gps {
+      height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-light);
+      gap: 10px;
+      font-size: 14px;
+    }
+    .map-no-gps .map-icon { font-size: 48px; }
+
+    .map-footer {
+      padding: 10px 20px;
+      font-size: 12px;
+      color: var(--text-light);
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Live Guards Table */
+    .live-guard-row {
+      background: rgba(16,185,129,0.04);
+    }
+
+    /* ===================== PHOTO THUMB ===================== */
+    .photo-thumb {
+      width: 46px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .photo-thumb:hover { transform: scale(1.1); border-color: var(--accent2); }
+
+    /* ===================== MODAL (photo lightbox) ===================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 8000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-content {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      max-width: 700px;
+      width: 100%;
+    }
+    .modal-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+    .modal-body img {
+      width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      background: #f8fafc;
+    }
+
+    /* ===================== PRINT ===================== */
+    @media print {
+      .topbar, .tab-nav, .btn-row, .btn, .gps-status-bar { display: none !important; }
+      .tab-section { display: block !important; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+    }
+  </style>
+</head>
+<body>
+<div class="assignment-card">
+    <h3>Client Assignment</h3>
+
+    <p>
+        <strong>Client:</strong>
+        <span id="myClientName">Hakuna Assignment</span>
+    </p>
+
+    <p>
+        <strong>Site:</strong>
+        <span id="myClientSite">---</span>
+    </p>
+</div>
+<!-- ============ TOPBAR ============ -->
+<div class="topbar">
+  <div class="topbar-brand">
+    🛡️ AJPLUS <span class="ob-label">OB SYSTEM</span>
+  </div>
+  <div class="topbar-right">
+    <div class="clock-display" id="clockDisplay">00:00:00</div>
+    <div class="guard-chip" id="guardChip">⏳ Inapakia...</div>
+  </div>
+</div>
+
+<!-- ============ GPS STATUS BAR ============ -->
+<div class="gps-status-bar">
+  <div class="gps-left">
+    <span class="online-dot"></span>
+    <span class="gps-label">📍 GPS Live</span>
+    <span class="gps-coords" id="gpsCoords">Inatafuta eneo lako...</span>
+  </div>
+  <div class="gps-badge searching" id="gpsBadge">⏳ Inatafuta</div>
+</div>
+
+<!-- ============ TAB NAV ============ -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="openTab('gate',this)">🚪 Gate Register</button>
+  <button class="tab-btn" onclick="openTab('patrol',this)">🕐 Doria ya Saa</button>
+  <button class="tab-btn" onclick="openTab('incident',this)">🚨 Tukio / Incident</button>
+  <button class="tab-btn" onclick="openTab('vehicle',this)">🚗 Magari</button>
+  <button class="tab-btn" onclick="openTab('keys',this)">🔑 Funguo</button>
+  <button class="tab-btn" onclick="openTab('property',this)">📦 Property Pass</button>
+  <button class="tab-btn" onclick="openTab('livemap',this)">🗺️ Live Map</button>
+  <button class="tab-btn" onclick="openTab('history',this)">📜 Historia Yote</button>
+</div>
+
+<!-- ============ MAIN CONTAINER ============ -->
+<div class="container">
+
+  <!-- ================================================
+       1. GATE REGISTER — Kuingia / Kutoka
+  ================================================ -->
+  <div id="tab-gate" class="tab-section active">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">🚪 Gate Register</div>
+        <div class="sec-subtitle">Rekodi watu wote wanaoingia na kutoka eneo</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="exportSection('gate_entries')">📥 Export CSV</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-chip">
+        <div class="label">Leo Walioingia</div>
+        <div class="count" id="gateStatIn">0</div>
+      </div>
+      <div class="stat-chip">
+        <div class="label">Bado Ndani</div>
+        <div class="count" id="gateStatInside">0</div>
+      </div>
+      <div class="stat-chip">
+        <div class="label">Waliotoka</div>
+        <div class="count" id="gateStatOut">0</div>
+      </div>
+      <div class="stat-chip">
+        <div class="label">Magari Leo</div>
+        <div class="count" id="gateStatCars">0</div>
+      </div>
+    </div>
+
+    <!-- Form ya kuingia -->
+    <div class="card">
+      <div class="card-header">➕ Sajili Mtu Anayeingia</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jina Kamili <span class="req">*</span></label>
+          <input type="text" id="gateFullName" placeholder="Mfano: John Doe">
+        </div>
+        <div class="form-group">
+          <label>Nambari ya Kitambulisho <span class="req">*</span></label>
+          <input type="text" id="gateIdNumber" placeholder="Nambari ya NID / Leseni">
+        </div>
+        <div class="form-group">
+          <label>Nia ya Kuingia <span class="req">*</span></label>
+          <select id="gatePurpose">
+            <option value="">— Chagua —</option>
+            <option value="Mgeni / Visitor">Mgeni / Visitor</option>
+            <option value="Msambazaji / Delivery">Msambazaji / Delivery</option>
+            <option value="Mkandarasi / Contractor">Mkandarasi / Contractor</option>
+            <option value="Mtendakazi / Staff">Mtendakazi / Staff</option>
+            <option value="Ukaguzi / Inspection">Ukaguzi / Inspection</option>
+            <option value="Wengine">Wengine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Anakwenda Kwa (Host)</label>
+          <input type="text" id="gateHost" placeholder="Anakwenda kumuona nani?">
+        </div>
+        <div class="form-group">
+          <label>Nambari ya Gari (Kama ana)</label>
+          <input type="text" id="gatePlate" placeholder="Mfano: T123 ABC">
+        </div>
+        <div class="form-group">
+          <label>Muda wa Kuingia <span class="req">*</span></label>
+          <input type="time" id="gateTimeIn">
+        </div>
+        <div class="form-group">
+          <label>Simu</label>
+          <input type="tel" id="gatePhone" placeholder="+255 7xx xxx xxx">
+        </div>
+        <div class="form-group">
+          <label>Aina ya Mgeni</label>
+          <select id="gateType">
+            <option value="Mgeni wa Kawaida">Mgeni wa Kawaida</option>
+            <option value="VIP">VIP</option>
+            <option value="Mlinzi wa Nje">Mlinzi wa Nje</option>
+            <option value="Msambazaji">Msambazaji</option>
+          </select>
+        </div>
+        <!-- NEW: Photo upload for gate entry -->
+        <div class="form-group full">
+          <label>📸 Picha ya Mgeni (Hiari)</label>
+          <input type="file" id="gatePhoto" accept="image/*" capture="camera"
+                 onchange="previewPhoto(this, 'gatePhotoPreview')">
+          <div class="photo-preview-wrap" id="gatePhotoPreview">
+            <img src="" alt="Preview">
+            <button class="remove-photo" onclick="removePhoto('gatePhoto','gatePhotoPreview')">✕</button>
+          </div>
+          <div class="upload-progress" id="gateUploadProgress">
+            <div class="upload-bar" id="gateUploadBar"></div>
+          </div>
+          <div class="upload-label" id="gateUploadLabel">Inapakia picha...</div>
+        </div>
+        <div class="form-group full">
+          <label>Maelezo / Vitu Alivyoingiza</label>
+          <textarea id="gateNotes" placeholder="Andika vitu, laptop, pakiti, n.k..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-success" id="gateInBtn" onclick="registerEntry()">
+          ✅ Sajili Kuingia
+        </button>
+        <button class="btn btn-outline" onclick="clearGateForm()">🔄 Safisha</button>
+      </div>
+    </div>
+
+    <!-- Waliopo Ndani Sasa -->
+    <div class="sec-header" style="margin-top:8px;">
+      <div>
+        <div class="sec-title" style="font-size:17px;">👥 Waliopo Ndani Sasa</div>
+      </div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:20px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Jina</th>
+            <th>Kitambulisho</th>
+            <th>Nia</th>
+            <th>Wakati Walioingia</th>
+            <th>Gari</th>
+            <th>Picha</th>
+            <th>Kutoka</th>
+          </tr>
+        </thead>
+        <tbody id="insideNowBody">
+          <tr><td colspan="7" class="empty-state"><div class="icon">🚶</div><p>Hakuna mtu ndani sasa.</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Historia ya Leo -->
+    <div class="sec-header">
+      <div>
+        <div class="sec-title" style="font-size:17px;">📋 Rekodi ya Leo</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Jina</th>
+            <th>ID</th>
+            <th>Nia</th>
+            <th>Wakati Ndani</th>
+            <th>Wakati Nje</th>
+            <th>Picha</th>
+            <th>Hali</th>
+            <th>Vitendo</th>
+          </tr>
+        </thead>
+        <tbody id="gateTodayBody">
+          <tr><td colspan="8"><div class="empty-state"><div class="icon">📋</div><p>Inapakia...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================================================
+       2. PATROL LOG — Doria ya Kila Saa
+  ================================================ -->
+  <div id="tab-patrol" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">🕐 Logi ya Doria ya Saa</div>
+        <div class="sec-subtitle">Thibitisha uko kazini kila saa — hii ni lazima kisheria</div>
+      </div>
+    </div>
+
+    <div class="alert-strip alert-warning">
+      ⚠️ Mlinzi lazima atume ripoti ya saa kila saa. Kama saa 2 zimepita bila ripoti, Admin ataarifiwa otomatiki.
+    </div>
+
+    <div class="card">
+      <div class="card-header">📝 Tuma Doria ya Saa</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Eneo la Doria <span class="req">*</span></label>
+          <input type="text" id="patrolArea" placeholder="Mfano: Geti Kuu, Warehouse B">
+        </div>
+        <div class="form-group">
+          <label>Saa ya Doria <span class="req">*</span></label>
+          <input type="time" id="patrolTime">
+        </div>
+        <div class="form-group">
+          <label>Hali ya Eneo <span class="req">*</span></label>
+          <select id="patrolStatus">
+            <option value="Salama">✅ Salama — Hakuna tatizo</option>
+            <option value="Mashaka Kidogo">⚠️ Kuna Mashaka Kidogo</option>
+            <option value="Tatizo — Inahitaji Msaada">🔴 Tatizo — Inahitaji Msaada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Hali ya Hewa / Mazingira</label>
+          <select id="patrolWeather">
+            <option value="Wazi">☀️ Wazi</option>
+            <option value="Mvua">🌧️ Mvua</option>
+            <option value="Giza">🌑 Giza / Umeme umekatika</option>
+            <option value="Upepo">💨 Upepo mkali</option>
+          </select>
+        </div>
+        <!-- NEW: Photo for patrol -->
+        <div class="form-group full">
+          <label>📸 Picha ya Eneo (Hiari)</label>
+          <input type="file" id="patrolPhoto" accept="image/*" capture="camera"
+                 onchange="previewPhoto(this, 'patrolPhotoPreview')">
+          <div class="photo-preview-wrap" id="patrolPhotoPreview">
+            <img src="" alt="Preview">
+            <button class="remove-photo" onclick="removePhoto('patrolPhoto','patrolPhotoPreview')">✕</button>
+          </div>
+          <div class="upload-progress" id="patrolUploadProgress">
+            <div class="upload-bar" id="patrolUploadBar"></div>
+          </div>
+          <div class="upload-label" id="patrolUploadLabel">Inapakia picha...</div>
+        </div>
+        <div class="form-group full">
+          <label>Maelezo ya Ziada</label>
+          <textarea id="patrolNotes" placeholder="Andika chochote kilichoonekana au kutokea..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-teal" id="patrolBtn" onclick="submitPatrol()">
+          🕐 Thibitisha Doria
+        </button>
+      </div>
+    </div>
+
+    <!-- Logi ya Leo -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Muda</th>
+            <th>Mlinzi</th>
+            <th>Eneo</th>
+            <th>Hali</th>
+            <th>Hewa</th>
+            <th>GPS</th>
+            <th>Picha</th>
+            <th>Maelezo</th>
+          </tr>
+        </thead>
+        <tbody id="patrolBody">
+          <tr><td colspan="8"><div class="empty-state"><p>Hakuna logi ya doria bado leo.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================================================
+       3. INCIDENT REPORT — Tukio
+  ================================================ -->
+  <div id="tab-incident" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">🚨 Ripoti ya Tukio (Incident)</div>
+        <div class="sec-subtitle">Rekodi tukio lolote — hata dogo — kisheria inatakiwa</div>
+      </div>
+    </div>
+
+    <div class="alert-strip alert-danger">
+      🚨 Kila tukio — hata kidogo — lazima liandikwe. Hii ndiyo ushahidi wa kisheria.
+    </div>
+
+    <div class="card">
+      <div class="card-header">📋 Ripoti Mpya ya Tukio</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Tarehe ya Tukio <span class="req">*</span></label>
+          <input type="date" id="incidentDate">
+        </div>
+        <div class="form-group">
+          <label>Muda wa Tukio <span class="req">*</span></label>
+          <input type="time" id="incidentTime">
+        </div>
+        <div class="form-group">
+          <label>Eneo la Tukio <span class="req">*</span></label>
+          <input type="text" id="incidentLocation" placeholder="Mfano: Geti Kuu, Parking">
+        </div>
+        <div class="form-group">
+          <label>Aina ya Tukio <span class="req">*</span></label>
+          <select id="incidentType">
+            <option value="">— Chagua Aina —</option>
+            <option value="Wizi / Theft">Wizi / Theft</option>
+            <option value="Ugomvi / Fight">Ugomvi / Fight</option>
+            <option value="Ajali / Accident">Ajali / Accident</option>
+            <option value="Moto / Fire">Moto / Fire</option>
+            <option value="Mtu Asiyeruhusiwa">Mtu Asiyeruhusiwa (Trespassing)</option>
+            <option value="Uharibifu wa Mali">Uharibifu wa Mali</option>
+            <option value="Gari Lilizopigwa">Gari Lilizopigwa / Kuscratch</option>
+            <option value="Hewa Mbaya / Gas">Hewa Mbaya / Gas Leak</option>
+            <option value="Nguvu za Umeme">Tatizo la Umeme</option>
+            <option value="Tukio Jingine">Tukio Jingine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kiwango cha Hatari</label>
+          <select id="incidentSeverity">
+            <option value="Ndogo / Minor">🟡 Ndogo / Minor</option>
+            <option value="Wastani / Moderate">🟠 Wastani / Moderate</option>
+            <option value="Kubwa / Major">🔴 Kubwa / Major</option>
+            <option value="Dharura / Critical">🆘 Dharura / Critical</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jina la Mhusika (Kama anajulikana)</label>
+          <input type="text" id="incidentPerson" placeholder="Mtu aliyehusika">
+        </div>
+        <div class="form-group full">
+          <label>Maelezo Kamili ya Tukio <span class="req">*</span></label>
+          <textarea id="incidentDesc" style="height:120px;"
+            placeholder="Elezea tukio kwa undani: nini kilitokea, saa ngapi hasa, watu waliohusika, hatua zilizochukuliwa..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Hatua Zilizochukuliwa</label>
+          <textarea id="incidentAction"
+            placeholder="Nilifanya nini baada ya tukio? Nilipigia simu nani? n.k..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Mashahidi (Witnesses)</label>
+          <input type="text" id="incidentWitness" placeholder="Majina ya mashahidi">
+        </div>
+        <div class="form-group">
+          <label>Polisi Waliitwa?</label>
+          <select id="incidentPolice">
+            <option value="Hapana">Hapana</option>
+            <option value="Ndiyo">Ndiyo — Walikuja</option>
+            <option value="Tulipiga simu, hawakuja">Tulipiga simu — Hawakuja</option>
+            <option value="Inangojea">Inasubiri</option>
+          </select>
+        </div>
+        <!-- NEW: Photo evidence for incident -->
+        <div class="form-group full">
+          <label>📸 Picha ya Ushahidi (Muhimu sana)</label>
+          <input type="file" id="incidentPhoto" accept="image/*" capture="camera"
+                 onchange="previewPhoto(this, 'incidentPhotoPreview')">
+          <div class="photo-preview-wrap" id="incidentPhotoPreview">
+            <img src="" alt="Preview">
+            <button class="remove-photo" onclick="removePhoto('incidentPhoto','incidentPhotoPreview')">✕</button>
+          </div>
+          <div class="upload-progress" id="incidentUploadProgress">
+            <div class="upload-bar" id="incidentUploadBar"></div>
+          </div>
+          <div class="upload-label" id="incidentUploadLabel">Inapakia picha...</div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger" id="incidentBtn" onclick="submitIncident()">
+          🚨 Tuma Ripoti ya Tukio
+        </button>
+        <button class="btn btn-outline" onclick="clearIncidentForm()">🔄 Safisha</button>
+      </div>
+    </div>
+
+    <!-- Matukio ya Leo -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tarehe/Muda</th>
+            <th>Eneo</th>
+            <th>Aina</th>
+            <th>Kiwango</th>
+            <th>Mlinzi</th>
+            <th>GPS</th>
+            <th>Picha</th>
+            <th>Vitendo</th>
+          </tr>
+        </thead>
+        <tbody id="incidentBody">
+          <tr><td colspan="8"><div class="empty-state"><div class="icon">✅</div><p>Hakuna matukio yaliyoripotiwa.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================================================
+       4. VEHICLE LOG — Magari
+  ================================================ -->
+  <div id="tab-vehicle" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">🚗 Logi ya Magari</div>
+        <div class="sec-subtitle">Rekodi magari yote yanayoingia na kutoka</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🚗 Sajili Gari Linaloingia / Kutoka</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nambari ya Gari <span class="req">*</span></label>
+          <input type="text" id="vehPlate" placeholder="T 123 ABC" style="text-transform:uppercase;">
+        </div>
+        <div class="form-group">
+          <label>Aina ya Gari</label>
+          <select id="vehType">
+            <option value="Gari Dogo / Car">Gari Dogo / Car</option>
+            <option value="Pikipiki / Boda">Pikipiki / Boda</option>
+            <option value="Lori / Truck">Lori / Truck</option>
+            <option value="Bajaji / Tuk-tuk">Bajaji / Tuk-tuk</option>
+            <option value="Basi / Bus">Basi / Bus</option>
+            <option value="Forklift">Forklift</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jina la Dereva <span class="req">*</span></label>
+          <input type="text" id="vehDriver" placeholder="Jina la dereva">
+        </div>
+        <div class="form-group">
+          <label>Kitambulisho cha Dereva</label>
+          <input type="text" id="vehDriverId" placeholder="NID / Leseni">
+        </div>
+        <div class="form-group">
+          <label>Mzigo / Lengo</label>
+          <input type="text" id="vehCargo" placeholder="Mfano: Mizigo 10, Delivery ya vifaa">
+        </div>
+        <div class="form-group">
+          <label>Inakwenda / Inatoka Wapi?</label>
+          <input type="text" id="vehFrom" placeholder="Mfano: Warehouse A → Geti">
+        </div>
+        <div class="form-group">
+          <label>Wakati Walioingia <span class="req">*</span></label>
+          <input type="time" id="vehTimeIn">
+        </div>
+        <div class="form-group">
+          <label>Idhini ya Kuingia</label>
+          <select id="vehAuth">
+            <option value="Imeidhinishwa">✅ Imeidhinishwa</option>
+            <option value="Haijaidhinishwa">❌ Haijaidhinishwa</option>
+            <option value="Inangoja idhini">⏳ Inasubiri Idhini</option>
+          </select>
+        </div>
+        <!-- NEW: Vehicle photo -->
+        <div class="form-group full">
+          <label>📸 Picha ya Gari (Hiari)</label>
+          <input type="file" id="vehPhoto" accept="image/*" capture="camera"
+                 onchange="previewPhoto(this, 'vehPhotoPreview')">
+          <div class="photo-preview-wrap" id="vehPhotoPreview">
+            <img src="" alt="Preview">
+            <button class="remove-photo" onclick="removePhoto('vehPhoto','vehPhotoPreview')">✕</button>
+          </div>
+          <div class="upload-progress" id="vehUploadProgress">
+            <div class="upload-bar" id="vehUploadBar"></div>
+          </div>
+          <div class="upload-label" id="vehUploadLabel">Inapakia picha...</div>
+        </div>
+        <div class="form-group full">
+          <label>Maelezo</label>
+          <textarea id="vehNotes" placeholder="Maelezo yoyote ya ziada..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-purple" id="vehBtn" onclick="submitVehicle()">
+          🚗 Sajili Gari
+        </button>
+        <button class="btn btn-outline" onclick="clearVehicleForm()">🔄 Safisha</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nambari</th>
+            <th>Aina</th>
+            <th>Dereva</th>
+            <th>Mzigo / Lengo</th>
+            <th>Ndani</th>
+            <th>Nje</th>
+            <th>Picha</th>
+            <th>Hali</th>
+            <th>Toka</th>
+          </tr>
+        </thead>
+        <tbody id="vehicleBody">
+          <tr><td colspan="9"><div class="empty-state"><div class="icon">🚗</div><p>Hakuna gari lililosajiliwatoka.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================================================
+       5. KEY REGISTER — Funguo
+  ================================================ -->
+  <div id="tab-keys" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">🔑 Daftari la Funguo</div>
+        <div class="sec-subtitle">Rekodi funguo zote zinazotolewa na kurudishwa</div>
+      </div>
+    </div>
+
+    <div class="alert-strip alert-warning">
+      ⚠️ Funguo zote lazima zirudishwe kabla ya mwisho wa zamu. Kama hazijarudishwa, ripoti mara moja.
+    </div>
+
+    <div class="sec-header">
+      <div class="sec-title" style="font-size:16px; color:var(--danger);">🔴 Funguo Bado Hazijarudishwa</div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:20px;">
+      <table>
+        <thead>
+          <tr><th>Funguo</th><th>Aliyechukua</th><th>Wakati Alipochukua</th><th>Malengo</th><th>Hatua</th></tr>
+        </thead>
+        <tbody id="keysOutBody">
+          <tr><td colspan="5"><div class="empty-state"><div class="icon">✅</div><p>Funguo zote zimerudishwa.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🔑 Toa / Rudisha Funguo</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jina la Funguo <span class="req">*</span></label>
+          <input type="text" id="keyName" placeholder="Mfano: Ofisi 3, Warehouse A, Geti Kuu">
+        </div>
+        <div class="form-group">
+          <label>Jina la Mpokeaji <span class="req">*</span></label>
+          <input type="text" id="keyRecipient" placeholder="Aliyepokea funguo">
+        </div>
+        <div class="form-group">
+          <label>Kitambulisho cha Mpokeaji</label>
+          <input type="text" id="keyRecipientId" placeholder="Nambari ya Badge / NID">
+        </div>
+        <div class="form-group">
+          <label>Wakati wa Kutoa <span class="req">*</span></label>
+          <input type="time" id="keyTimeOut">
+        </div>
+        <div class="form-group">
+          <label>Wakati wa Kurudisha</label>
+          <input type="time" id="keyTimeIn">
+        </div>
+        <div class="form-group">
+          <label>Hali ya Funguo</label>
+          <select id="keyAction">
+            <option value="Imetolewa">🔑 Imetolewa (Check Out)</option>
+            <option value="Imerudishwa">✅ Imerudishwa (Check In)</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Sababu / Maelezo</label>
+          <textarea id="keyNotes" placeholder="Sababu ya kuchukua funguo..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-warning" id="keyBtn" onclick="submitKey()">
+          🔑 Sajili Funguo
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Funguo</th><th>Mpokeaji</th><th>Wakati Nje</th><th>Wakati Ndani</th><th>Hali</th><th>Mlinzi</th></tr>
+        </thead>
+        <tbody id="keysBody">
+          <tr><td colspan="6"><div class="empty-state"><p>Inapakia...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================================================
+       6. PROPERTY PASS
+  ================================================ -->
+  <div id="tab-property" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">📦 Property Pass — Vitu Vinavyotoka</div>
+        <div class="sec-subtitle">Kila kitu kinachotoka eneo lazima kiwe na idhini ya maandishi</div>
+      </div>
+    </div>
+
+    <div class="alert-strip alert-danger">
+      🚨 SHERIA: Hakuna kitu kinachoweza kutoka bila Property Pass iliyoidhinishwa. Ruhusu tu kama unao Pass halisi.
+    </div>
+
+    <div class="card">
+      <div class="card-header">📦 Sajili Kitu Kinachotoka</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jina la Kitu / Vitu <span class="req">*</span></label>
+          <input type="text" id="propItem" placeholder="Mfano: Laptop HP, Viti 3, Boksi la Vifaa">
+        </div>
+        <div class="form-group">
+          <label>Wingi / Quantity <span class="req">*</span></label>
+          <input type="text" id="propQty" placeholder="Mfano: 2, 1 boksi, 3 pieces">
+        </div>
+        <div class="form-group">
+          <label>Jina la Mchukuaji <span class="req">*</span></label>
+          <input type="text" id="propCarrier" placeholder="Anayechukua kitu">
+        </div>
+        <div class="form-group">
+          <label>Kitambulisho cha Mchukuaji</label>
+          <input type="text" id="propCarrierId" placeholder="NID / Badge">
+        </div>
+        <div class="form-group">
+          <label>Idhini Imetolewa Na <span class="req">*</span></label>
+          <input type="text" id="propAuthBy" placeholder="Jina la aliyeidhinisha">
+        </div>
+        <div class="form-group">
+          <label>Wakati wa Kutoka <span class="req">*</span></label>
+          <input type="time" id="propTime">
+        </div>
+        <div class="form-group">
+          <label>Nambari ya Pass / Ref</label>
+          <input type="text" id="propRef" placeholder="PP-2024-001">
+        </div>
+        <div class="form-group">
+          <label>Hali ya Kitu</label>
+          <select id="propCondition">
+            <option value="Nzuri">✅ Nzuri / Good Condition</option>
+            <option value="Imechakaa kidogo">⚠️ Imechakaa kidogo</option>
+            <option value="Imevunjika">❌ Imevunjika / Damaged</option>
+          </select>
+        </div>
+        <!-- NEW: Property photo -->
+        <div class="form-group full">
+          <label>📸 Picha ya Kitu (Hiari)</label>
+          <input type="file" id="propPhoto" accept="image/*" capture="camera"
+                 onchange="previewPhoto(this, 'propPhotoPreview')">
+          <div class="photo-preview-wrap" id="propPhotoPreview">
+            <img src="" alt="Preview">
+            <button class="remove-photo" onclick="removePhoto('propPhoto','propPhotoPreview')">✕</button>
+          </div>
+          <div class="upload-progress" id="propUploadProgress">
+            <div class="upload-bar" id="propUploadBar"></div>
+          </div>
+          <div class="upload-label" id="propUploadLabel">Inapakia picha...</div>
+        </div>
+        <div class="form-group full">
+          <label>Maelezo / Sababu</label>
+          <textarea id="propNotes" placeholder="Elezea sababu ya kutoka kwa vitu hivi..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="propBtn" onclick="submitProperty()">
+          📦 Sajili Property Pass
+        </button>
+        <button class="btn btn-outline" onclick="clearPropertyForm()">🔄 Safisha</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Kitu</th><th>Wingi</th><th>Mchukuaji</th><th>Idhini Na</th><th>Muda</th><th>Hali</th><th>Picha</th><th>Mlinzi</th></tr>
+        </thead>
+        <tbody id="propertyBody">
+          <tr><td colspan="8"><div class="empty-state"><div class="icon">📦</div><p>Hakuna vitu vilivyotoka bado.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================================================
+       7. LIVE MAP — Wachungaji wote kwenye ramani
+  ================================================ -->
+  <div id="tab-livemap" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">🗺️ Live Map — Wachungaji Wote</div>
+        <div class="sec-subtitle">Ona mahali walipo wachungaji wote sasa hivi</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="refreshLiveMap()">🔄 Refresh</button>
+    </div>
+
+    <!-- Stats ya wachungaji online -->
+    <div class="stats-row" style="grid-template-columns: repeat(auto-fit,minmax(130px,1fr));">
+      <div class="stat-chip">
+        <div class="label">Wachungaji Online</div>
+        <div class="count" id="liveGuardCount" style="color:var(--success);">0</div>
+      </div>
+      <div class="stat-chip">
+        <div class="label">GPS Inafanya Kazi</div>
+        <div class="count" id="liveGPSCount" style="color:var(--accent2);">0</div>
+      </div>
+      <div class="stat-chip">
+        <div class="label">Hali Yangu</div>
+        <div class="count" id="myGPSStatus" style="font-size:14px; padding-top:4px;">—</div>
+      </div>
+    </div>
+
+    <!-- Map display -->
+    <div class="map-card">
+      <div class="map-card-header">
+        <div class="map-title">
+          🗺️ Ramani ya Live GPS
+          <span class="badge badge-gps" id="mapUpdateBadge">Inasubiri GPS...</span>
+        </div>
+        <button class="btn btn-sm btn-teal" onclick="centerMyLocation()">📍 Eneo Langu</button>
+      </div>
+      <div id="liveMap">
+        <div class="map-no-gps" id="mapNoGPS">
+          <div class="map-icon">🗺️</div>
+          <p>Ramani itaonekana baada ya GPS kupatikana.</p>
+          <p style="font-size:12px; margin-top:4px;">Hakikisha umeniruhusu kutumia GPS.</p>
+        </div>
+        <!-- Map iframe itawekwa hapa dynamically -->
+      </div>
+      <div class="map-footer">
+        <span id="mapFooterCoords">📍 Eneo halijulikani bado</span>
+        <span id="mapFooterTime" style="color:var(--text-light);">—</span>
+      </div>
+    </div>
+
+    <!-- Live guards table -->
+    <div class="card">
+      <div class="card-header">👥 Wachungaji Wote Online Sasa</div>
+      <div class="table-wrap" style="box-shadow:none; margin-bottom:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Mlinzi</th>
+              <th>Site / Eneo</th>
+              <th>GPS Coordinates</th>
+              <th>Mara ya Mwisho</th>
+              <th>Hali</th>
+              <th>Ramani</th>
+            </tr>
+          </thead>
+          <tbody id="liveGuardsBody">
+            <tr><td colspan="6"><div class="empty-state"><p>Inapakia...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================
+       8. HISTORIA YOTE
+  ================================================ -->
+  <div id="tab-history" class="tab-section">
+    <div class="sec-header">
+      <div>
+        <div class="sec-title">📜 Historia Yote ya OB</div>
+        <div class="sec-subtitle">Rekodi kamili ya zamu hii na zilizopita</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <select id="historyFilter" onchange="loadHistory()" style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; outline:none; font-size:13px;">
+          <option value="all">Aina Zote</option>
+          <option value="gate_entries">Gate Register</option>
+          <option value="patrol_logs">Doria ya Saa</option>
+          <option value="incidents">Matukio</option>
+          <option value="vehicle_logs">Magari</option>
+          <option value="key_logs">Funguo</option>
+          <option value="property_passes">Property Pass</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportAllHistory()">📥 Export Zote</button>
+        <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tarehe / Muda</th>
+            <th>Aina</th>
+            <th>Eneo / Kitu</th>
+            <th>Mtu Husika</th>
+            <th>Mlinzi</th>
+            <th>GPS</th>
+            <th>Picha</th>
+            <th>Maelezo</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="8"><div class="empty-state"><p>Inapakia historia...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- end .container -->
+
+<!-- Photo Lightbox Modal -->
+<div class="modal-overlay" id="photoModal" onclick="closePhotoModal(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span id="photoModalTitle">📸 Picha</span>
+      <button class="modal-close" onclick="document.getElementById('photoModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <img id="photoModalImg" src="" alt="Picha">
+    </div>
+  </div>
+</div>
+
+<!-- Firebase Config -->
+<script src="firebase-config.js"></script>
+
+<script>
+/* ===========================================================
+   OB SYSTEM v2 — GPS Live + Photo Upload
+   Mpya:
+   - GPS tracking inayoendelea (kila dakika 1)
+   - liveGuards node inasasishwa Firebase
+   - Photo upload kwa kila section (Storage)
+   - Live Map tab (OpenStreetMap iframe + guards table)
+   - Historia yote inaonyesha GPS & Picha
+=========================================================== */
+
+let db, storage;
+let currentUser  = null;
+let guardName    = "Mlinzi";
+let currentSite  = "Hakijawekwa";
+let currentLat   = null;
+let currentLng   = null;
+let gpsInterval  = null;
+let mapIframe    = null;
+let currentSiteId = "default";
+
+/* ====================================================
+   CLOCK
+==================================================== */
+function startClock() {
+  function tick() {
+    const now = new Date();
+    document.getElementById("clockDisplay").textContent =
+      now.toLocaleTimeString('sw-TZ');
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ====================================================
+   TABS
+==================================================== */
+function openTab(tabId, btn) {
+  document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + tabId).classList.add("active");
+  btn.classList.add("active");
+
+  if (tabId === 'gate')     loadGateData();
+  if (tabId === 'patrol')   loadPatrolData();
+  if (tabId === 'incident') loadIncidentData();
+  if (tabId === 'vehicle')  loadVehicleData();
+  if (tabId === 'keys')     loadKeysData();
+  if (tabId === 'property') loadPropertyData();
+  if (tabId === 'livemap')  loadLiveMapTab();
+  if (tabId === 'history')  loadHistory();
+}
+
+/* ====================================================
+   AUTH
+==================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof firebase === 'undefined') {
+    console.error("Firebase haikupatikana!");
+    return;
+  }
+
+  db      = firebase.database();
+  storage = firebase.storage();
+  startClock();
+  setAllTimes();
+  setTodayDates();
+
+  firebase.auth().onAuthStateChanged(user => {
+
+    if (!user) {
+        window.location.href = "Ajplussecurity_login.html";
+        return;
+    }
+
+    currentUser = user;
+
+    db.ref("users/" + user.uid).once("value").then(snap => {
+
+        const data = snap.val() || {};
+
+        guardName = data.name || user.displayName || user.email || "Mlinzi";
+
+        currentSite = data.site || data.station || "Hakijawekwa";
+
+        currentSiteId = data.siteId || "default";
+
+        document.getElementById("guardChip").textContent =
+            "🛡️ " + guardName;
+
+        startGPS();
+
+        // ASSIGNMENT LISTENER
+        
+
+    });
+
+    loadGateData();
+
+});
+  });
+
+/*
+================================================================
+  JINSI GUARD ANAVYOSOMA ASSIGNMENT YAKE — Ongeza kwenye guard_dashboard.html
+  
+  Kwenye DOMContentLoaded au baada ya auth, ongeza:
+  ================================================================ */
+  
+  db.ref('users/' + user.uid + '/currentAssignment').on('value', snap => {
+    const asgn = snap.val();
+    if (asgn) {
+      // Guard anaona client wake
+      document.getElementById('myClientName').textContent = asgn.clientName;
+      document.getElementById('myClientSite').textContent = asgn.clientSite;
+      currentSite = asgn.clientSite; // Hutumika kwenye OB reports
+    }
+  });
+  
+
+
+/* ====================================================
+   GPS — Live Tracking
+==================================================== */
+function startGPS() {
+  if (!navigator.geolocation) {
+    updateGPSBadge(false, "GPS haipatikani");
+    return;
+  }
+
+  // Pata eneo mara moja kwanza
+  navigator.geolocation.getCurrentPosition(
+    pos => onGPSSuccess(pos),
+    err => onGPSError(err),
+    { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
+  );
+
+  // Endelea kusasisha kila dakika 1
+  gpsInterval = setInterval(() => {
+    navigator.geolocation.getCurrentPosition(
+      pos => onGPSSuccess(pos),
+      () => {}, // Kimya — tunaendelea
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }, 60000);
+}
+
+function onGPSSuccess(pos) {
+  currentLat = pos.coords.latitude;
+  currentLng = pos.coords.longitude;
+  const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy) + "m" : "";
+
+  updateGPSBadge(true, `${currentLat.toFixed(5)}, ${currentLng.toFixed(5)} ±${accuracy}`);
+  pushLiveLocation();
+  updateMapIfOpen();
+}
+
+function onGPSError(err) {
+  const msgs = {
+    1: "GPS imekataliwa — Ruhusu GPS kwenye browser yako",
+    2: "Eneo halipatikani",
+    3: "GPS imechukua muda mrefu sana"
+  };
+  updateGPSBadge(false, msgs[err.code] || "GPS imeshindwa");
+}
+
+function updateGPSBadge(isOn, text) {
+  const badge   = document.getElementById("gpsBadge");
+  const coords  = document.getElementById("gpsCoords");
+  if (coords) coords.textContent = text;
+  if (badge) {
+    badge.textContent = isOn ? "✅ GPS On" : "❌ GPS Off";
+    badge.className   = "gps-badge " + (isOn ? "" : "off");
+  }
+
+  // Sasisha myGPSStatus kwenye map tab
+  const myStatus = document.getElementById("myGPSStatus");
+  if (myStatus) {
+    myStatus.textContent = isOn ? "✅ Online" : "❌ Haifanyi kazi";
+    myStatus.style.color = isOn ? "var(--success)" : "var(--danger)";
+    myStatus.style.fontSize = "18px";
+  }
+}
+
+function pushLiveLocation() {
+  if (!db || !currentUser || !currentLat) return;
+  db.ref("liveGuards/" + currentUser.uid).update({
+    name:      guardName,
+    site:      currentSite,
+    lat:       currentLat,
+    lng:       currentLng,
+    online:    true,
+    updatedAt: Date.now()
+  });
+}
+
+/* ====================================================
+   LIVE MAP TAB
+==================================================== */
+function loadLiveMapTab() {
+  loadLiveGuards();
+  if (currentLat) {
+    renderMap(currentLat, currentLng);
+    updateMapFooter();
+  }
+}
+
+function renderMap(lat, lng) {
+  const mapDiv = document.getElementById("liveMap");
+  if (!mapDiv) return;
+
+  // Tumia OpenStreetMap (hakuna API key inahitajika)
+  const zoom = 16;
+  const src  = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.005},${lat-0.005},${lng+0.005},${lat+0.005}&layer=mapnik&marker=${lat},${lng}`;
+
+  mapDiv.innerHTML = `
+    <iframe
+      id="mapIframe"
+      src="${src}"
+      width="100%"
+      height="300"
+      style="border:0; display:block;"
+      loading="lazy"
+      title="Live Location Map">
+    </iframe>`;
+
+  document.getElementById("mapNoGPS")?.remove();
+  document.getElementById("mapUpdateBadge").textContent = "✅ GPS Inaonyesha";
+  document.getElementById("mapUpdateBadge").className = "badge badge-in";
+}
+
+function updateMapIfOpen() {
+  const mapTab = document.getElementById("tab-livemap");
+  if (mapTab && mapTab.classList.contains("active") && currentLat) {
+    renderMap(currentLat, currentLng);
+    updateMapFooter();
+  }
+}
+
+function updateMapFooter() {
+  if (!currentLat) return;
+  const footerCoords = document.getElementById("mapFooterCoords");
+  const footerTime   = document.getElementById("mapFooterTime");
+  if (footerCoords) footerCoords.textContent = `📍 ${currentLat.toFixed(6)}, ${currentLng.toFixed(6)}`;
+  if (footerTime)   footerTime.textContent   = `Imesasishwa: ${new Date().toLocaleTimeString('sw-TZ')}`;
+}
+
+function centerMyLocation() {
+  if (!currentLat) {
+    showToast("GPS bado haijapatikana. Subiri kidogo.", "warning");
+    return;
+  }
+  renderMap(currentLat, currentLng);
+  updateMapFooter();
+}
+
+function refreshLiveMap() {
+  loadLiveGuards();
+  if (currentLat) renderMap(currentLat, currentLng);
+  showToast("Ramani imesasishwa!", "success");
+}
+
+function loadLiveGuards() {
+  if (!db) return;
+  const tbody = document.getElementById("liveGuardsBody");
+  if (!tbody) return;
+
+  // Ona wachungaji waliofanya update ndani ya dakika 10
+  const cutoff = Date.now() - (10 * 60 * 1000);
+
+  db.ref("liveGuards").once("value").then(snap => {
+    tbody.innerHTML = "";
+
+    if (!snap.exists()) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>Hakuna wachungaji online sasa.</p></div></td></tr>`;
+      document.getElementById("liveGuardCount").textContent = "0";
+      document.getElementById("liveGPSCount").textContent   = "0";
+      return;
+    }
+
+    const guards   = [];
+    let gpsCount   = 0;
+
+    snap.forEach(c => {
+      const g = { uid: c.key, ...c.val() };
+      if (g.updatedAt && g.updatedAt > cutoff) {
+        guards.push(g);
+        if (g.lat && g.lng) gpsCount++;
+      }
+    });
+
+    document.getElementById("liveGuardCount").textContent = guards.length;
+    document.getElementById("liveGPSCount").textContent   = gpsCount;
+
+    if (guards.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>Hakuna wachungaji online (dakika 10 zilizopita).</p></div></td></tr>`;
+      return;
+    }
+
+    // Sort: mpya kwanza
+    guards.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    guards.forEach(g => {
+      const minsAgo = g.updatedAt
+        ? Math.round((Date.now() - g.updatedAt) / 60000)
+        : null;
+      const timeStr  = minsAgo !== null
+        ? (minsAgo === 0 ? "Sasa hivi" : `Dakika ${minsAgo} zilizopita`)
+        : "—";
+      const isMe     = currentUser && g.uid === currentUser.uid;
+      const hasGPS   = g.lat && g.lng;
+      const mapsLink = hasGPS
+        ? `<a href="https://www.google.com/maps?q=${g.lat},${g.lng}" target="_blank"
+             class="btn btn-sm btn-outline">🗺️ Ona</a>`
+        : "—";
+
+      tbody.innerHTML += `
+        <tr class="${isMe ? 'live-guard-row' : ''}">
+          <td>
+            <strong>${g.name || '—'}</strong>
+            ${isMe ? ' <span class="badge badge-in" style="font-size:9px;">Mimi</span>' : ''}
+          </td>
+          <td>${g.site || '—'}</td>
+          <td style="font-size:12px; font-variant-numeric:tabular-nums;">
+            ${hasGPS
+              ? `<span style="color:var(--success);">📍 ${parseFloat(g.lat).toFixed(4)}, ${parseFloat(g.lng).toFixed(4)}</span>`
+              : '<span style="color:var(--text-light);">Haijulikani</span>'}
+          </td>
+          <td><span style="font-size:12px;">${timeStr}</span></td>
+          <td>
+            <span class="badge ${minsAgo !== null && minsAgo <= 5 ? 'badge-in' : minsAgo !== null && minsAgo <= 10 ? 'badge-warning' : 'badge-out'}">
+              ${minsAgo !== null && minsAgo <= 5 ? '🟢 Online' : minsAgo !== null && minsAgo <= 10 ? '🟡 Karibu' : '🔴 Mbali'}
+            </span>
+          </td>
+          <td>${mapsLink}</td>
+        </tr>`;
+    });
+  });
+}
+
+/* ====================================================
+   PHOTO HELPERS — Preview, Upload, Remove
+==================================================== */
+function previewPhoto(input, previewId) {
+  const wrap = document.getElementById(previewId);
+  if (!wrap || !input.files || !input.files[0]) return;
+
+  const file   = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = wrap.querySelector("img");
+    if (img) img.src = e.target.result;
+    wrap.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  const wrap  = document.getElementById(previewId);
+  if (input) input.value = "";
+  if (wrap) {
+    wrap.style.display = "none";
+    const img = wrap.querySelector("img");
+    if (img) img.src = "";
+  }
+}
+
+function openPhotoModal(url, title) {
+  const modal = document.getElementById("photoModal");
+  const img   = document.getElementById("photoModalImg");
+  const ttl   = document.getElementById("photoModalTitle");
+  if (!modal || !img) return;
+  img.src          = url;
+  if (ttl) ttl.textContent = "📸 " + (title || "Picha");
+  modal.classList.add("open");
+}
+
+function closePhotoModal(e) {
+  if (e.target === document.getElementById("photoModal")) {
+    document.getElementById("photoModal").classList.remove("open");
+  }
+}
+
+// Upload picha kwenda Firebase Storage, rudisha URL
+function uploadPhoto(file, folder, progressBarId, progressWrapId, labelId) {
+  return new Promise((resolve, reject) => {
+    if (!storage || !currentUser) { resolve(""); return; }
+
+    const ext      = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const safeName = `${folder}/${currentUser.uid}_${Date.now()}.${ext}`;
+    const ref      = storage.ref(safeName);
+    const task     = ref.put(file);
+
+    const bar  = progressBarId  ? document.getElementById(progressBarId)  : null;
+    const wrap = progressWrapId ? document.getElementById(progressWrapId) : null;
+    const lbl  = labelId        ? document.getElementById(labelId)        : null;
+
+    if (wrap)  wrap.style.display = "block";
+    if (lbl)   lbl.style.display  = "block";
+
+    task.on(
+      'state_changed',
+      snapshot => {
+        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        if (bar) bar.style.width = pct + "%";
+        if (lbl) lbl.textContent = `Inapakia picha... ${pct}%`;
+      },
+      err => {
+        if (wrap) wrap.style.display = "none";
+        if (lbl)  lbl.style.display  = "none";
+        console.error("Photo upload error:", err);
+        reject(err);
+      },
+      () => {
+        task.snapshot.ref.getDownloadURL().then(url => {
+          if (wrap) wrap.style.display = "none";
+          if (lbl)  lbl.style.display  = "none";
+          if (bar)  bar.style.width    = "0%";
+          resolve(url);
+        }).catch(reject);
+      }
+    );
+  });
+}
+
+// Helper ya kujenga HTML ya picha kwenye table
+function photoThumbHTML(photoURL) {
+  if (!photoURL) return '—';
+  return `<img src="${photoURL}" class="photo-thumb"
+               onclick="openPhotoModal('${photoURL}')"
+               alt="Picha" title="Bonyeza kuona picha kubwa">`;
+}
+
+// Helper ya GPS info kwenye table
+function gpsHTML(lat, lng) {
+  if (!lat || !lng) return '<span style="color:var(--text-light); font-size:11px;">—</span>';
+  return `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank"
+             style="font-size:11px; color:var(--accent2); text-decoration:none;">
+            📍 ${parseFloat(lat).toFixed(4)},${parseFloat(lng).toFixed(4)}
+          </a>`;
+}
+
+/* ====================================================
+   SET DEFAULT TIMES & DATES
+==================================================== */
+function setAllTimes() {
+  const now = new Date();
+  const t   = String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+  ["gateTimeIn","patrolTime","vehTimeIn","keyTimeOut","propTime"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = t;
+  });
+}
+
+function setTodayDates() {
+  const today = new Date().toISOString().slice(0,10);
+  const el = document.getElementById("incidentDate");
+  if (el) el.value = today;
+}
+
+/* ====================================================
+   HELPERS
+==================================================== */
+function fmtTime(ts) {
+  return ts ? new Date(ts).toLocaleString('sw-TZ') : '—';
+}
+
+function todayStr() {
+  return new Date().toDateString();
+}
+
+function showToast(msg, type = "") {
+  const old = document.querySelector(".toast");
+  if (old) old.remove();
+  const t = Object.assign(document.createElement("div"), {
+    className: "toast " + type, textContent: msg
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function setLoading(btnId, loading, defaultHTML) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled  = loading;
+  btn.innerHTML = loading ? `<span class="spinner"></span> Inatuma...` : defaultHTML;
+}
+
+/* ====================================================
+   1. GATE REGISTER
+==================================================== */
+async function registerEntry() {
+  if (!db || !currentUser) return;
+
+  const name    = document.getElementById("gateFullName").value.trim();
+  const idNum   = document.getElementById("gateIdNumber").value.trim();
+  const purpose = document.getElementById("gatePurpose").value;
+  const host    = document.getElementById("gateHost").value.trim();
+  const plate   = document.getElementById("gatePlate").value.trim().toUpperCase();
+  const timeIn  = document.getElementById("gateTimeIn").value;
+  const phone   = document.getElementById("gatePhone").value.trim();
+  const type    = document.getElementById("gateType").value;
+  const notes   = document.getElementById("gateNotes").value.trim();
+  const file    = document.getElementById("gatePhoto").files[0];
+
+  if (!name)    { showToast("Weka jina kamili!", "warning"); return; }
+  if (!idNum)   { showToast("Weka nambari ya kitambulisho!", "warning"); return; }
+  if (!purpose) { showToast("Chagua nia ya kuingia!", "warning"); return; }
+  if (!timeIn)  { showToast("Weka muda wa kuingia!", "warning"); return; }
+
+  setLoading("gateInBtn", true, "✅ Sajili Kuingia");
+
+  let photoURL = "";
+  if (file) {
+    try {
+      photoURL = await uploadPhoto(file, "gate_photos", "gateUploadBar", "gateUploadProgress", "gateUploadLabel");
+    } catch(e) {
+      console.log("Gate photo upload imeshindwa:", e);
+    }
+  }
+
+  db.ref("gate_entries/" + currentSiteId).push({
+    name, idNumber: idNum, purpose, host,
+    plate, timeIn, phone, type, notes,
+    photoURL,
+    lat: currentLat, lng: currentLng,
+    timeOut: null, status: "Inside",
+    guard: guardName, guardId: currentUser.uid,
+    site: currentSite, timestamp: Date.now()
+  })
+  .then(() => {
+    showToast("✅ Umesajiliwa kuingia!", "success");
+    clearGateForm();
+    loadGateData();
+  })
+  .catch(e => { console.error(e); showToast("Imeshindwa!", "danger"); })
+  .finally(() => setLoading("gateInBtn", false, "✅ Sajili Kuingia"));
+}
+
+function registerExit(siteId,key) {
+  const now     = new Date();
+  const timeOut = String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+  if (!confirm("Thibitisha kutoka kwa mtu huyu saa " + timeOut + "?")) return;
+
+  db.ref("gate_entries/" + siteId + "/" + key).update({
+    timeOut, status: "Out", exitTimestamp: Date.now()
+  })
+  .then(() => { showToast("✅ Kutoka kumesajiliwa.", "success"); loadGateData(); })
+  .catch(() => showToast("Imeshindwa.", "danger"));
+}
+
+function loadGateData() {
+  if (!db) return;
+
+  db.ref("gate_entries/" + currentSiteId)
+    .orderByChild("timestamp")
+    .limitToLast(200)
+    .once("value")
+    .then(snap => {
+      const today      = todayStr();
+      const insideBody = document.getElementById("insideNowBody");
+      const todayBody  = document.getElementById("gateTodayBody");
+      if (!insideBody || !todayBody) return;
+
+      let allEntries = [];
+      snap.forEach(c => allEntries.push({ key: c.key, ...c.val() }));
+      allEntries.reverse();
+
+      const todayEntries = allEntries.filter(e =>
+        e.timestamp && new Date(e.timestamp).toDateString() === today
+      );
+      const inside = todayEntries.filter(e => e.status === "Inside");
+
+      document.getElementById("gateStatIn").textContent     = todayEntries.length;
+      document.getElementById("gateStatInside").textContent = inside.length;
+      document.getElementById("gateStatOut").textContent    = todayEntries.filter(e => e.status === "Out").length;
+      document.getElementById("gateStatCars").textContent   = todayEntries.filter(e => e.plate).length;
+
+      insideBody.innerHTML = inside.length === 0
+        ? `<tr><td colspan="7"><div class="empty-state"><div class="icon">🚶</div><p>Hakuna mtu ndani sasa.</p></div></td></tr>`
+        : inside.map(e => `
+            <tr>
+              <td><strong>${e.name}</strong></td>
+              <td>${e.idNumber || '—'}</td>
+              <td><span class="badge badge-inside">${e.purpose}</span></td>
+              <td>${e.timeIn || '—'}</td>
+              <td>${e.plate || '—'}</td>
+              <td>${photoThumbHTML(e.photoURL)}</td>
+              <td>
+                <button class="btn btn-sm btn-danger" onclick="registerExit('${currentSiteId}', '${e.key}')">
+                  🚶 Toka
+                </button>
+              </td>
+            </tr>`).join('');
+
+      todayBody.innerHTML = todayEntries.length === 0
+        ? `<tr><td colspan="8"><div class="empty-state"><p>Hakuna rekodi leo.</p></div></td></tr>`
+        : todayEntries.map(e => `
+            <tr>
+              <td><strong>${e.name}</strong></td>
+              <td>${e.idNumber || '—'}</td>
+              <td>${e.purpose || '—'}</td>
+              <td>${e.timeIn || '—'}</td>
+              <td>${e.timeOut || '—'}</td>
+              <td>${photoThumbHTML(e.photoURL)}</td>
+              <td>
+                <span class="badge ${e.status === 'Inside' ? 'badge-inside' : 'badge-out'}">
+                  ${e.status === 'Inside' ? '🟢 Ndani' : '🔴 Ametoka'}
+                </span>
+              </td>
+              <td>
+                ${e.status === 'Inside'
+                  ? `<button class="btn btn-sm btn-danger" onclick="registerExit('${currentSiteId}', '${e.key}')">Toka</button>`
+                  : '—'}
+              </td>
+            </tr>`).join('');
+    });
+}
+
+function clearGateForm() {
+  ["gateFullName","gateIdNumber","gateHost","gatePlate","gatePhone","gateNotes"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.getElementById("gatePurpose").value = "";
+  removePhoto("gatePhoto", "gatePhotoPreview");
+  setAllTimes();
+}
+
+/* ====================================================
+   2. PATROL LOG
+==================================================== */
+async function submitPatrol() {
+  if (!db || !currentUser) return;
+
+  const area    = document.getElementById("patrolArea").value.trim();
+  const time    = document.getElementById("patrolTime").value;
+  const status  = document.getElementById("patrolStatus").value;
+  const weather = document.getElementById("patrolWeather").value;
+  const notes   = document.getElementById("patrolNotes").value.trim();
+  const file    = document.getElementById("patrolPhoto").files[0];
+
+  if (!area) { showToast("Weka eneo la doria!", "warning"); return; }
+  if (!time) { showToast("Weka muda!", "warning"); return; }
+
+  setLoading("patrolBtn", true, "🕐 Thibitisha Doria");
+
+  let photoURL = "";
+  if (file) {
+    try {
+      photoURL = await uploadPhoto(file, "patrol_photos", "patrolUploadBar", "patrolUploadProgress", "patrolUploadLabel");
+    } catch(e) { console.log("Patrol photo upload imeshindwa:", e); }
+  }
+
+  db.ref("patrol_logs/" + currentSiteId).push({
+    area, time, status, weather, notes,
+    photoURL,
+    lat: currentLat, lng: currentLng,
+    guard: guardName, guardId: currentUser.uid,
+    site: currentSite, timestamp: Date.now()
+  })
+  .then(() => {
+    showToast("✅ Doria imethbitishwa!", "success");
+    document.getElementById("patrolArea").value  = "";
+    document.getElementById("patrolNotes").value = "";
+    removePhoto("patrolPhoto", "patrolPhotoPreview");
+    loadPatrolData();
+    // Sasisha eneo kwenye liveGuards
+    pushLiveLocation();
+  })
+  .catch(e => { console.error(e); showToast("Imeshindwa!", "danger"); })
+  .finally(() => setLoading("patrolBtn", false, "🕐 Thibitisha Doria"));
+}
+
+function loadPatrolData() {
+  if (!db) return;
+  const tbody = document.getElementById("patrolBody");
+  if (!tbody) return;
+
+  db.ref("patrol_logs/" + currentSiteId)
+    .orderByChild("timestamp")
+    .limitToLast(50)
+    .once("value")
+    .then(snap => {
+      tbody.innerHTML = "";
+      if (!snap.exists()) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>Hakuna logi bado.</p></div></td></tr>`;
+        return;
+      }
+      const arr = [];
+      snap.forEach(c => arr.push(c.val()));
+      arr.reverse().forEach(r => {
+        const bc = r.status === 'Salama' ? 'badge-in' : r.status.includes('Tatizo') ? 'badge-urgent' : 'badge-warning';
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.time || '—'}<br><small style="color:var(--text-light);">${r.timestamp ? new Date(r.timestamp).toLocaleDateString('sw-TZ') : ''}</small></td>
+            <td>${r.guard || '—'}</td>
+            <td>${r.area || '—'}</td>
+            <td><span class="badge ${bc}">${r.status}</span></td>
+            <td>${r.weather || '—'}</td>
+            <td>${gpsHTML(r.lat, r.lng)}</td>
+            <td>${photoThumbHTML(r.photoURL)}</td>
+            <td style="max-width:140px;">${r.notes || '—'}</td>
+          </tr>`;
+      });
+    });
+}
+
+/* ====================================================
+   3. INCIDENT
+==================================================== */
+async function submitIncident() {
+  if (!db || !currentUser) return;
+
+  const date     = document.getElementById("incidentDate").value;
+  const time     = document.getElementById("incidentTime").value;
+  const location = document.getElementById("incidentLocation").value.trim();
+  const type     = document.getElementById("incidentType").value;
+  const severity = document.getElementById("incidentSeverity").value;
+  const person   = document.getElementById("incidentPerson").value.trim();
+  const desc     = document.getElementById("incidentDesc").value.trim();
+  const action   = document.getElementById("incidentAction").value.trim();
+  const witness  = document.getElementById("incidentWitness").value.trim();
+  const police   = document.getElementById("incidentPolice").value;
+  const file     = document.getElementById("incidentPhoto").files[0];
+
+  if (!location) { showToast("Weka eneo la tukio!", "warning"); return; }
+  if (!type)     { showToast("Chagua aina ya tukio!", "warning"); return; }
+  if (!desc)     { showToast("Andika maelezo ya tukio!", "warning"); return; }
+
+  setLoading("incidentBtn", true, "🚨 Tuma Ripoti ya Tukio");
+
+  let photoURL = "";
+  if (file) {
+    try {
+      photoURL = await uploadPhoto(file, "incident_photos", "incidentUploadBar", "incidentUploadProgress", "incidentUploadLabel");
+    } catch(e) { console.log("Incident photo upload imeshindwa:", e); }
+  }
+
+  const data = {
+    date, time, location, type, severity,
+    person, desc, action, witness, police,
+    photoURL,
+    lat: currentLat, lng: currentLng,
+    guard: guardName, guardId: currentUser.uid,
+    site: currentSite, timestamp: Date.now()
+  };
+
+  db.ref("incidents/" + currentSiteId).push(data)
+  .then(() => {
+    if (severity.includes("Major") || severity.includes("Critical")) {
+      db.ref("emergency").push({
+        guard: guardName, guardId: currentUser.uid,
+        site: location,
+        message: "🚨 INCIDENT: " + type + " — " + desc,
+        photoURL, lat: currentLat, lng: currentLng,
+        timestamp: Date.now()
+      });
+      showToast("🚨 Tukio kubwa limetumwa kwa Admin & Supervisor!", "danger");
+    } else {
+      showToast("✅ Ripoti ya tukio imetumwa!", "success");
+    }
+    clearIncidentForm();
+    loadIncidentData();
+  })
+  .catch(e => { console.error(e); showToast("Imeshindwa!", "danger"); })
+  .finally(() => setLoading("incidentBtn", false, "🚨 Tuma Ripoti ya Tukio"));
+}
+
+function loadIncidentData() {
+  if (!db) return;
+  const tbody = document.getElementById("incidentBody");
+  if (!tbody) return;
+
+  db.ref("incidents").orderByChild("timestamp").limitToLast(50).once("value").then(snap => {
+    tbody.innerHTML = "";
+    if (!snap.exists()) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">✅</div><p>Hakuna matukio.</p></div></td></tr>`;
+      return;
+    }
+    const arr = [];
+    snap.forEach(c => arr.push({ key: c.key, ...c.val() }));
+    arr.reverse().forEach(r => {
+      const sc = r.severity?.includes("Critical") ? "badge-urgent"
+               : r.severity?.includes("Major")    ? "badge-danger"
+               : r.severity?.includes("Moderate") ? "badge-warning"
+               : "badge-normal";
+      tbody.innerHTML += `
+        <tr>
+          <td>${r.date || '—'} ${r.time || ''}</td>
+          <td>${r.location || '—'}</td>
+          <td>${r.type || '—'}</td>
+          <td><span class="badge ${sc}">${r.severity || '—'}</span></td>
+          <td>${r.guard || '—'}</td>
+          <td>${gpsHTML(r.lat, r.lng)}</td>
+          <td>${photoThumbHTML(r.photoURL)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="viewIncident('${r.key}')">👁 Angalia</button>
+          </td>
+        </tr>`;
+    });
+  });
+}
+
+function viewIncident(key) {
+  db.ref("incidents/" + currentSiteId + "/" + key).once("value").then(snap => {
+    const r = snap.val();
+    if (!r) return;
+    // Onyesha picha kama ipo
+    if (r.photoURL) {
+      openPhotoModal(r.photoURL, "Picha ya Tukio — " + (r.type || ''));
+    }
+    alert(
+      "🚨 RIPOTI YA TUKIO\n\n" +
+      "📅 Tarehe / Muda : " + (r.date||'') + " " + (r.time||'') + "\n" +
+      "📍 Eneo          : " + (r.location||'') + "\n" +
+      "🔴 Aina          : " + (r.type||'') + "\n" +
+      "⚠️ Kiwango       : " + (r.severity||'') + "\n" +
+      "👤 Mhusika       : " + (r.person||'Hajulikani') + "\n" +
+      "👁 Mashahidi     : " + (r.witness||'—') + "\n" +
+      "👮 Polisi        : " + (r.police||'Hapana') + "\n" +
+      "📡 GPS           : " + (r.lat ? `${r.lat}, ${r.lng}` : '—') + "\n\n" +
+      "💬 MAELEZO:\n" + (r.desc||'') + "\n\n" +
+      "✅ HATUA:\n" + (r.action||'—') + "\n\n" +
+      "🛡️ Mlinzi: " + (r.guard||'')
+    );
+  });
+}
+
+function clearIncidentForm() {
+  ["incidentLocation","incidentPerson","incidentDesc","incidentAction","incidentWitness"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.getElementById("incidentType").value = "";
+  removePhoto("incidentPhoto", "incidentPhotoPreview");
+  setTodayDates();
+  setAllTimes();
+}
+
+/* ====================================================
+   4. VEHICLE LOG
+==================================================== */
+async function submitVehicle() {
+  if (!db || !currentUser) return;
+
+  const plate    = document.getElementById("vehPlate").value.trim().toUpperCase();
+  const type     = document.getElementById("vehType").value;
+  const driver   = document.getElementById("vehDriver").value.trim();
+  const driverId = document.getElementById("vehDriverId").value.trim();
+  const cargo    = document.getElementById("vehCargo").value.trim();
+  const from     = document.getElementById("vehFrom").value.trim();
+  const timeIn   = document.getElementById("vehTimeIn").value;
+  const auth     = document.getElementById("vehAuth").value;
+  const notes    = document.getElementById("vehNotes").value.trim();
+  const file     = document.getElementById("vehPhoto").files[0];
+
+  if (!plate)  { showToast("Weka nambari ya gari!", "warning"); return; }
+  if (!driver) { showToast("Weka jina la dereva!", "warning"); return; }
+
+  setLoading("vehBtn", true, "🚗 Sajili Gari");
+
+  let photoURL = "";
+  if (file) {
+    try {
+      photoURL = await uploadPhoto(file, "vehicle_photos", "vehUploadBar", "vehUploadProgress", "vehUploadLabel");
+    } catch(e) { console.log("Vehicle photo upload imeshindwa:", e); }
+  }
+
+  db.ref("vehicle_logs").push({
+    plate, type, driver, driverId, cargo, from,
+    timeIn, auth, notes,
+    photoURL,
+    lat: currentLat, lng: currentLng,
+    timeOut: null, status: "Inside",
+    guard: guardName, guardId: currentUser.uid,
+    site: currentSite, timestamp: Date.now()
+  })
+  .then(() => {
+    showToast("✅ Gari limesajiliwa!", "success");
+    clearVehicleForm();
+    loadVehicleData();
+  })
+  .catch(e => { console.error(e); showToast("Imeshindwa!", "danger"); })
+  .finally(() => setLoading("vehBtn", false, "🚗 Sajili Gari"));
+}
+
+function registerVehicleExit(key) {
+  const now = new Date();
+  const t   = String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+  if (!confirm("Thibitisha gari limetoka saa " + t + "?")) return;
+  db.ref("vehicle_logs/" + currentSiteId + "/" + key).update({ timeOut: t, status: "Out", exitTimestamp: Date.now() })
+    .then(() => { showToast("✅ Kutoka kwa gari kumesajiliwa.", "success"); loadVehicleData(); });
+}
+
+function loadVehicleData() {
+  if (!db) return;
+  const tbody = document.getElementById("vehicleBody");
+  if (!tbody) return;
+
+  db.ref("vehicle_logs/" + currentSiteId).orderByChild("timestamp").limitToLast(100).once("value").then(snap => {
+    tbody.innerHTML = "";
+    if (!snap.exists()) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">🚗</div><p>Hakuna magari.</p></div></td></tr>`;
+      return;
+    }
+    const arr = [];
+    snap.forEach(c => arr.push({ key: c.key, ...c.val() }));
+    arr.reverse().forEach(v => {
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${v.plate}</strong></td>
+          <td>${v.type || '—'}</td>
+          <td>${v.driver || '—'}</td>
+          <td>${v.cargo || '—'}</td>
+          <td>${v.timeIn || '—'}</td>
+          <td>${v.timeOut || '—'}</td>
+          <td>${photoThumbHTML(v.photoURL)}</td>
+          <td><span class="badge ${v.status === 'Inside' ? 'badge-inside' : 'badge-out'}">${v.status === 'Inside' ? '🟢 Ndani' : '🔴 Nje'}</span></td>
+          <td>
+            ${v.status === 'Inside'
+              ? `<button class="btn btn-sm btn-danger" onclick="registerVehicleExit('${v.key}')">Toka</button>`
+              : '✅'}
+          </td>
+        </tr>`;
+    });
+  });
+}
+
+function clearVehicleForm() {
+  ["vehPlate","vehDriver","vehDriverId","vehCargo","vehFrom","vehNotes"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  removePhoto("vehPhoto", "vehPhotoPreview");
+  setAllTimes();
+}
+
+/* ====================================================
+   5. KEY REGISTER
+==================================================== */
+function submitKey() {
+  if (!db || !currentUser) return;
+
+  const keyName   = document.getElementById("keyName").value.trim();
+  const recipient = document.getElementById("keyRecipient").value.trim();
+  const recipId   = document.getElementById("keyRecipientId").value.trim();
+  const timeOut   = document.getElementById("keyTimeOut").value;
+  const timeIn    = document.getElementById("keyTimeIn").value;
+  const action    = document.getElementById("keyAction").value;
+  const notes     = document.getElementById("keyNotes").value.trim();
+
+  if (!keyName)   { showToast("Weka jina la funguo!", "warning"); return; }
+  if (!recipient) { showToast("Weka jina la mpokeaji!", "warning"); return; }
+
+  setLoading("keyBtn", true, "🔑 Sajili Funguo");
+
+  db.ref("key_logs").push({
+    keyName, recipient, recipientId: recipId,
+    timeOut, timeIn, action, notes,
+    lat: currentLat, lng: currentLng,
+    guard: guardName, guardId: currentUser.uid,
+    site: currentSite, timestamp: Date.now()
+  })
+  .then(() => {
+    showToast("✅ Funguo imesajiliwa!", "success");
+    ["keyName","keyRecipient","keyRecipientId","keyTimeIn","keyNotes"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    loadKeysData();
+  })
+  .catch(e => { console.error(e); showToast("Imeshindwa!", "danger"); })
+  .finally(() => setLoading("keyBtn", false, "🔑 Sajili Funguo"));
+}
+
+function loadKeysData() {
+  if (!db) return;
+  const tbody   = document.getElementById("keysBody");
+  const outBody = document.getElementById("keysOutBody");
+  if (!tbody || !outBody) return;
+
+  db.ref("key_logs").orderByChild("timestamp").limitToLast(100).once("value").then(snap => {
+    tbody.innerHTML   = "";
+    outBody.innerHTML = "";
+
+    if (!snap.exists()) {
+      tbody.innerHTML   = `<tr><td colspan="6"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`;
+      outBody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">✅</div><p>Funguo zote zimerudishwa.</p></div></td></tr>`;
+      return;
+    }
+
+    const arr = [];
+    snap.forEach(c => arr.push({ key: c.key, ...c.val() }));
+    arr.reverse();
+
+    const unreturned = arr.filter(k => k.action === 'Imetolewa' && !k.timeIn);
+
+    outBody.innerHTML = unreturned.length === 0
+      ? `<tr><td colspan="5"><div class="empty-state"><div class="icon">✅</div><p>Funguo zote zimerudishwa.</p></div></td></tr>`
+      : unreturned.map(k => `
+          <tr style="background:rgba(239,68,68,0.04);">
+            <td><strong>${k.keyName}</strong></td>
+            <td>${k.recipient}</td>
+            <td>${k.timeOut || '—'}</td>
+            <td>${k.notes || '—'}</td>
+            <td>
+              <button class="btn btn-sm btn-success" onclick="returnKey('${k.key}')">✅ Rudiwa</button>
+            </td>
+          </tr>`).join('');
+
+    arr.forEach(k => {
+      const sc = k.action === 'Imetolewa' ? 'badge-warning' : 'badge-in';
+      tbody.innerHTML += `
+        <tr>
+          <td>${k.keyName}</td>
+          <td>${k.recipient}</td>
+          <td>${k.timeOut || '—'}</td>
+          <td>${k.timeIn || '—'}</td>
+          <td><span class="badge ${sc}">${k.action}</span></td>
+          <td>${k.guard || '—'}</td>
+        </tr>`;
+    });
+  });
+}
+
+function returnKey(key) {
+  const now = new Date();
+  const t   = String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+  if (!confirm("Thibitisha funguo imerudishwa saa " + t + "?")) return;
+  db.ref("key_logs/" + currentSiteId + "/" + key).update({ timeIn: t, action: "Imerudishwa", returnTimestamp: Date.now() })
+    .then(() => { showToast("✅ Funguo imerudishwa.", "success"); loadKeysData(); });
+}
+
+/* ====================================================
+   6. PROPERTY PASS
+==================================================== */
+async function submitProperty() {
+  if (!db || !currentUser) return;
+
+  const item      = document.getElementById("propItem").value.trim();
+  const qty       = document.getElementById("propQty").value.trim();
+  const carrier   = document.getElementById("propCarrier").value.trim();
+  const carrierId = document.getElementById("propCarrierId").value.trim();
+  const authBy    = document.getElementById("propAuthBy").value.trim();
+  const time      = document.getElementById("propTime").value;
+  const ref       = document.getElementById("propRef").value.trim();
+  const condition = document.getElementById("propCondition").value;
+  const notes     = document.getElementById("propNotes").value.trim();
+  const file      = document.getElementById("propPhoto").files[0];
+
+  if (!item)    { showToast("Weka jina la kitu!", "warning"); return; }
+  if (!carrier) { showToast("Weka jina la mchukuaji!", "warning"); return; }
+  if (!authBy)  { showToast("Weka jina la aliyeidhinisha!", "warning"); return; }
+
+  setLoading("propBtn", true, "📦 Sajili Property Pass");
+
+  let photoURL = "";
+  if (file) {
+    try {
+      photoURL = await uploadPhoto(file, "property_photos", "propUploadBar", "propUploadProgress", "propUploadLabel");
+    } catch(e) { console.log("Property photo upload imeshindwa:", e); }
+  }
+
+  db.ref("property_passes/" + currentSiteId).({
+    item, qty, carrier, carrierId, authBy,
+    time, ref, condition, notes,
+    photoURL,
+    lat: currentLat, lng: currentLng,
+    guard: guardName, guardId: currentUser.uid,
+    site: currentSite, timestamp: Date.now()
+  })
+  .then(() => {
+    showToast("✅ Property Pass imesajiliwa!", "success");
+    clearPropertyForm();
+    loadPropertyData();
+  })
+  .catch(e => { console.error(e); showToast("Imeshindwa!", "danger"); })
+  .finally(() => setLoading("propBtn", false, "📦 Sajili Property Pass"));
+}
+
+function loadPropertyData() {
+  if (!db) return;
+  const tbody = document.getElementById("propertyBody");
+  if (!tbody) return;
+
+  db.ref("property_passes/" + currentSiteId).orderByChild("timestamp").limitToLast(100).once("value").then(snap => {
+    tbody.innerHTML = "";
+    if (!snap.exists()) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📦</div><p>Hakuna rekodi.</p></div></td></tr>`;
+      return;
+    }
+    const arr = [];
+    snap.forEach(c => arr.push(c.val()));
+    arr.reverse().forEach(p => {
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${p.item}</strong></td>
+          <td>${p.qty || '—'}</td>
+          <td>${p.carrier || '—'}</td>
+          <td>${p.authBy || '—'}</td>
+          <td>${p.time || '—'}</td>
+          <td><span class="badge badge-teal">${p.condition || '—'}</span></td>
+          <td>${photoThumbHTML(p.photoURL)}</td>
+          <td>${p.guard || '—'}</td>
+        </tr>`;
+    });
+  });
+}
+
+function clearPropertyForm() {
+  ["propItem","propQty","propCarrier","propCarrierId","propAuthBy","propRef","propNotes"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.getElementById("propCondition").value = "Nzuri";
+  removePhoto("propPhoto", "propPhotoPreview");
+  setAllTimes();
+}
+
+/* ====================================================
+   7. HISTORIA YOTE
+==================================================== */
+function loadHistory() {
+  if (!db) return;
+  const tbody  = document.getElementById("historyBody");
+  const filter = document.getElementById("historyFilter").value;
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  const nodes = filter === 'all'
+    ? ['gate_entries','patrol_logs','incidents','vehicle_logs','key_logs','property_passes']
+    : [filter];
+
+  const typeLabels = {
+    gate_entries:    { icon: '🚪', label: 'Gate' },
+    patrol_logs:     { icon: '🕐', label: 'Doria' },
+    incidents:       { icon: '🚨', label: 'Tukio' },
+    vehicle_logs:    { icon: '🚗', label: 'Gari' },
+    key_logs:        { icon: '🔑', label: 'Funguo' },
+    property_passes: { icon: '📦', label: 'Property' }
+  };
+
+  let allRows = [];
+  let pending = nodes.length;
+
+  nodes.forEach(node => {
+    db.ref(node).orderByChild("timestamp").limitToLast(50).once("value").then(snap => {
+      snap.forEach(c => {
+        const v = c.val();
+        allRows.push({
+          timestamp: v.timestamp || 0,
+          type: node,
+          icon:     typeLabels[node]?.icon  || '📋',
+          label:    typeLabels[node]?.label || node,
+          location: v.area || v.location || v.site || v.keyName || v.item || v.plate || '—',
+          person:   v.name || v.driver || v.recipient || v.carrier || v.guard || '—',
+          guard:    v.guard || '—',
+          detail:   v.message || v.notes || v.desc || v.purpose || v.status || '—',
+          lat:      v.lat  || null,
+          lng:      v.lng  || null,
+          photoURL: v.photoURL || ""
+        });
+      });
+
+      pending--;
+      if (pending === 0) {
+        allRows.sort((a, b) => b.timestamp - a.timestamp);
+
+        tbody.innerHTML = allRows.length === 0
+          ? `<tr><td colspan="8"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`
+          : allRows.map(r => `
+              <tr>
+                <td style="white-space:nowrap;">${r.timestamp ? fmtTime(r.timestamp) : '—'}</td>
+                <td><span class="badge badge-teal">${r.icon} ${r.label}</span></td>
+                <td>${r.location}</td>
+                <td>${r.person}</td>
+                <td>${r.guard}</td>
+                <td>${gpsHTML(r.lat, r.lng)}</td>
+                <td>${photoThumbHTML(r.photoURL)}</td>
+                <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.detail}</td>
+              </tr>`).join('');
+      }
+    });
+  });
+}
+
+/* ====================================================
+   EXPORT CSV
+==================================================== */
+function exportSection(node) {
+  if (!db) return;
+  db.ref(node).once("value").then(snap => {
+    let csv = "Timestamp,Node,Data\n";
+    snap.forEach(c => {
+      const v = c.val();
+      csv += `"${v.timestamp ? new Date(v.timestamp).toLocaleString() : ''}","${node}","${JSON.stringify(v).replace(/"/g,'""')}"\n`;
+    });
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
+      download: "AJPLUS_OB_" + node + "_" + new Date().toISOString().slice(0,10) + ".csv"
+    });
+    a.click();
+    showToast("CSV imedownload!", "success");
+  });
+}
+
+function exportAllHistory() {
+  ['gate_entries','patrol_logs','incidents','vehicle_logs','key_logs','property_passes']
+    .forEach(n => exportSection(n));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AJPLUS — Setup Admin (Tumia Mara Moja Tu)</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Segoe UI',sans-serif;
+  background:#0a1628;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.card{
+  background:white;border-radius:16px;
+  padding:36px 32px;width:100%;max-width:480px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.warn{
+  background:#fff3cd;border:2px solid #f59e0b;
+  border-radius:10px;padding:14px 16px;
+  margin-bottom:24px;font-size:13px;
+  color:#92400e;line-height:1.6;
+}
+.warn strong{display:block;font-size:14px;margin-bottom:4px;}
+h1{font-size:20px;font-weight:800;color:#0a1628;margin-bottom:6px;}
+p{font-size:13px;color:#64748b;margin-bottom:24px;}
+
+.form-group{margin-bottom:16px;}
+label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.5px;color:#64748b;margin-bottom:6px;}
+input,select{
+  width:100%;padding:11px 13px;
+  border:1.5px solid #e2e8f0;border-radius:9px;
+  font-family:'Segoe UI',sans-serif;font-size:14px;
+  color:#1e293b;outline:none;
+  transition:border-color 0.2s;
+}
+input:focus,select:focus{border-color:#EABF0B;}
+
+.btn{
+  width:100%;padding:13px;
+  background:#EABF0B;color:#0a1628;
+  border:none;border-radius:9px;
+  font-size:15px;font-weight:800;
+  cursor:pointer;transition:all 0.2s;
+  margin-top:8px;
+}
+.btn:hover:not(:disabled){background:#d4ab09;transform:translateY(-1px);}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+
+.result{
+  margin-top:18px;padding:14px 16px;
+  border-radius:9px;font-size:13px;
+  font-weight:600;display:none;line-height:1.6;
+}
+.result.success{
+  background:rgba(16,185,129,0.1);
+  border-left:4px solid #10b981;
+  color:#065f46;display:block;
+}
+.result.error{
+  background:rgba(232,58,58,0.1);
+  border-left:4px solid #e83a3a;
+  color:#b92929;display:block;
+}
+.result.info{
+  background:rgba(234,191,11,0.1);
+  border-left:4px solid #EABF0B;
+  color:#78560a;display:block;
+}
+
+.spinner{
+  display:inline-block;width:16px;height:16px;
+  border:2px solid rgba(10,22,40,0.3);
+  border-top-color:#0a1628;
+  border-radius:50%;animation:spin 0.7s linear infinite;
+  vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.step{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;font-size:13px;color:#64748b;
+  border-bottom:1px solid #f1f5f9;
+}
+.step:last-child{border:none;}
+.step-dot{
+  width:20px;height:20px;border-radius:50%;
+  background:#e2e8f0;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:800;
+  flex-shrink:0;
+}
+.step-dot.done{background:#10b981;color:white;}
+.step-dot.active{background:#EABF0B;color:#0a1628;animation:pulse 1s infinite;}
+.step-dot.error{background:#e83a3a;color:white;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="warn">
+    <strong>⚠️ FAILI HII NI YA KUTUMIA MARA MOJA TU!</strong>
+    Baada ya kutengeneza admin, <strong>FUTA faili hii</strong> kutoka kwenye folder yako.
+    Usiiacha kwenye server — ni hatari kiusalama.
+  </div>
+
+  <h1>🛡️ Tengeneza Admin Account</h1>
+  <p>Jaza taarifa za admin wako. Faili hii itaongeza data kwenye Firebase Database moja kwa moja.</p>
+
+  <!-- Steps indicator -->
+  <div id="stepsWrap" style="display:none;margin-bottom:20px;">
+    <div class="step" id="step1"><span class="step-dot" id="dot1">1</span><span id="step1txt">Inaingia kwenye Firebase...</span></div>
+    <div class="step" id="step2"><span class="step-dot" id="dot2">2</span><span id="step2txt">Inaandika data ya admin...</span></div>
+    <div class="step" id="step3"><span class="step-dot" id="dot3">3</span><span id="step3txt">Inathibitisha...</span></div>
+  </div>
+
+  <div class="form-group">
+    <label>Email ya Admin (ile iliyopo kwenye Firebase Auth)</label>
+    <input type="email" id="adminEmail" placeholder="admin@ajplus.com" value="admin@ajplus.com">
+  </div>
+
+  <div class="form-group">
+    <label>Password ya Admin</label>
+    <input type="password" id="adminPassword" placeholder="Password yako ya sasa">
+  </div>
+
+  <div class="form-group">
+    <label>Jina la Admin</label>
+    <input type="text" id="adminName" placeholder="AJPLUS Admin" value="AJPLUS Admin">
+  </div>
+
+  <div class="form-group">
+    <label>Role (usibadilishe)</label>
+    <input type="text" id="adminRole" value="admin" readonly style="background:#f8fafc;color:#64748b;">
+  </div>
+
+  <button class="btn" id="setupBtn" onclick="setupAdmin()">
+    🚀 Tengeneza Admin Sasa
+  </button>
+
+  <div class="result" id="resultBox"></div>
+
+</div>
+
+<script src="firebase-config.js"></script>
+<script>
+
+function showStep(num, status, text) {
+  const dot = document.getElementById('dot' + num);
+  const txt = document.getElementById('step' + num + 'txt');
+  dot.className = 'step-dot ' + status;
+  if (text) txt.textContent = text;
+  if (status === 'done') dot.textContent = '✓';
+  if (status === 'error') dot.textContent = '✗';
+  if (status === 'active') dot.textContent = num;
+}
+
+function showResult(msg, type) {
+  const el = document.getElementById('resultBox');
+  el.innerHTML = msg;
+  el.className = 'result ' + type;
+}
+
+async function setupAdmin() {
+  const email    = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value.trim();
+  const name     = document.getElementById('adminName').value.trim() || 'AJPLUS Admin';
+
+  if (!email)    { showResult('❌ Weka email ya admin.', 'error'); return; }
+  if (!password) { showResult('❌ Weka password ya admin.', 'error'); return; }
+  if (password.length < 6) { showResult('❌ Password ni fupi sana.', 'error'); return; }
+
+  const btn = document.getElementById('setupBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Inafanya kazi...';
+
+  document.getElementById('stepsWrap').style.display = 'block';
+  showResult('', '');
+
+  /* ===== STEP 1: Sign in ===== */
+  showStep(1, 'active', 'Inaingia kwenye Firebase Auth...');
+
+  let uid;
+  try {
+    const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+    uid = cred.user.uid;
+    showStep(1, 'done', `✅ Imeingia! UID: ${uid.slice(0,16)}...`);
+  } catch(err) {
+    showStep(1, 'error', '❌ Imeshindwa kuingia');
+    showResult(
+      `❌ <strong>Imeshindwa kuingia kwenye Firebase Auth.</strong><br><br>
+       Kosa: ${err.message}<br><br>
+       Hakikisha email na password ni sahihi — zile zile ulizozitumia kuunda account kwenye Firebase Console.`,
+      'error'
+    );
+    btn.disabled = false;
+    btn.textContent = '🚀 Tengeneza Admin Sasa';
+    return;
+  }
+
+  /* ===== STEP 2: Write to Database ===== */
+  showStep(2, 'active', 'Inaandika data kwenye Realtime Database...');
+
+  const db = firebase.database();
+  const adminData = {
+    uid:       uid,
+    name:      name,
+    email:     email,
+    role:      'admin',
+    status:    'active',
+    createdAt: Date.now(),
+  };
+
+  try {
+    await db.ref('users/' + uid).set(adminData);
+    showStep(2, 'done', '✅ Data imeandikwa kwenye users/' + uid.slice(0,12) + '...');
+  } catch(err) {
+    showStep(2, 'error', '❌ Imeshindwa kuandika data');
+    showResult(
+      `❌ <strong>Imeshindwa kuandika kwenye Database.</strong><br><br>
+       Kosa: ${err.message}<br><br>
+       Angalia Database Rules — lazima ziruhusu kuandika:<br>
+       <code>{ "rules": { ".read": "auth != null", ".write": "auth != null" } }</code>`,
+      'error'
+    );
+    btn.disabled = false;
+    btn.textContent = '🚀 Tengeneza Admin Sasa';
+    return;
+  }
+
+  /* ===== STEP 3: Verify ===== */
+  showStep(3, 'active', 'Inathibitisha data...');
+
+  try {
+    const snap = await db.ref('users/' + uid).once('value');
+    const saved = snap.val();
+
+    if (saved && saved.role === 'admin' && saved.status === 'active') {
+      showStep(3, 'done', '✅ Data imethibitishwa!');
+      showResult(
+        `✅ <strong>Admin ametengenezwa vizuri!</strong><br><br>
+         📧 Email: <strong>${email}</strong><br>
+         🆔 UID: <strong>${uid}</strong><br>
+         👑 Role: <strong>admin</strong><br>
+         ✅ Status: <strong>active</strong><br><br>
+         <strong>Sasa unaweza:</strong><br>
+         1. Funga faili hii (setup-admin.html) — IFUTE!<br>
+         2. Nenda kwenye <a href="Ajplussecurity_login.html" style="color:#065f46;font-weight:700;">Login page</a><br>
+         3. Ingiza email na password yako — utaingia admin dashboard!`,
+        'success'
+      );
+    } else {
+      showStep(3, 'error', '❌ Data haikuthibitishwa');
+      showResult('❌ Data iliandikwa lakini haikuthibitishwa. Angalia Realtime Database moja kwa moja.', 'error');
+    }
+  } catch(err) {
+    showStep(3, 'error', '❌ Tatizo la kuthibitisha');
+    showResult(`❌ Tatizo la kuthibitisha: ${err.message}`, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🚀 Tengeneza Admin Sasa';
+}
+</script>
+</body>
+</html>
