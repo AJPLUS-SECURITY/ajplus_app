@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AJPLUS — Owner Command Center</title>
+<meta name="robots" content="noindex, nofollow">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Sora:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#0c0a16;--bg2:#150f24;--bg3:#1c1430;--bg4:#241a3d;
+  --purple:#7c3aed;--purple2:rgba(124,58,237,0.14);--purple3:#a78bfa;
+  --emerald:#10b981;--emerald2:rgba(16,185,129,0.14);
+  --gold:#d4af37;--gold2:rgba(212,175,55,0.14);
+  --red:#e83a3a;--red2:rgba(232,58,58,0.12);
+  --blue:#38bdf8;--blue2:rgba(56,189,248,0.12);
+  --white:#f3f0ff;--muted:#9b93b8;--muted2:#5b5478;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --sidebar-w:268px;--topbar-h:64px;
+  --card:rgba(28,20,48,0.75);--shadow:0 4px 28px rgba(0,0,0,0.5);
+  --radius:14px;--tr:0.22s ease;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:'Sora',sans-serif;
+  background:var(--bg);
+  color:var(--white);
+  font-size:14px;line-height:1.5;
+  min-height:100vh;
+}
+
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.35);border-radius:3px;}
+
+/* ================= LOGIN SCREEN ================= */
+.login-screen{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 20%, rgba(124,58,237,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 35% at 85% 85%, rgba(16,185,129,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 35% at 15% 85%, rgba(212,175,55,0.08) 0%, transparent 70%),
+    var(--bg);
+  z-index:2000;padding:20px;
+}
+.login-card{
+  width:100%;max-width:420px;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:40px 34px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.6);
+  animation:loginIn 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes loginIn{from{opacity:0;transform:translateY(18px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+.login-badge{
+  width:74px;height:74px;margin:0 auto 18px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),#5b21b6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;
+  box-shadow:0 0 40px rgba(124,58,237,0.45), 0 10px 30px rgba(0,0,0,0.4);
+  border:2px solid rgba(212,175,55,0.35);
+}
+.login-card h1{
+  font-family:'Cinzel',serif;
+  font-size:22px;font-weight:700;
+  text-align:center;letter-spacing:1.5px;
+  color:var(--white);margin-bottom:4px;
+}
+.login-card h1 span{color:var(--gold);}
+.login-card .sub{
+  text-align:center;font-style:italic;font-size:12px;
+  color:var(--muted);letter-spacing:0.5px;margin-bottom:28px;
+}
+
+.lf-group{margin-bottom:16px;}
+.lf-group label{
+  display:block;font-size:10.5px;text-transform:uppercase;
+  letter-spacing:0.8px;color:var(--muted);font-weight:700;margin-bottom:7px;
+}
+.lf-input{
+  width:100%;padding:12px 15px;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border2);
+  border-radius:10px;color:var(--white);
+  font-family:'Sora',sans-serif;font-size:14px;outline:none;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+.lf-input:focus{
+  border-color:var(--purple3);
+  box-shadow:0 0 0 3px rgba(124,58,237,0.15);
+}
+.lf-input::placeholder{color:rgba(155,147,184,0.45);}
+
+.login-btn{
+  width:100%;padding:13px;margin-top:6px;
+  background:linear-gradient(135deg,var(--purple),#5b21b6);
+  color:white;border:none;border-radius:10px;
+  font-family:'Sora',sans-serif;font-size:14.5px;font-weight:700;
+  cursor:pointer;transition:all var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.login-btn:hover:not(:disabled){
+  box-shadow:0 10px 30px rgba(124,58,237,0.4);transform:translateY(-1px);
+}
+.login-btn:disabled{opacity:0.6;cursor:not-allowed;}
+
+.login-err{
+  margin-top:14px;padding:11px 14px;
+  background:var(--red2);border-left:3px solid var(--red);
+  border-radius:8px;font-size:12.5px;color:#fca5a5;
+  display:none;
+}
+.login-foot{
+  text-align:center;margin-top:22px;font-size:11px;
+  color:var(--muted2);font-style:italic;
+}
+
+.spinner{
+  width:15px;height:15px;border:2px solid rgba(255,255,255,0.25);
+  border-top-color:white;border-radius:50%;
+  animation:spin 0.7s linear infinite;display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ================= DASHBOARD SHELL ================= */
+.dashboard{display:none;}
+.dashboard.show{display:flex;}
+
+.sidebar{
+  width:var(--sidebar-w);height:100vh;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;z-index:200;
+  transition:transform var(--tr);overflow-y:auto;
+}
+.sidebar-brand{
+  display:flex;flex-direction:column;align-items:center;
+  padding:26px 20px 20px;border-bottom:1px solid var(--border);
+  gap:10px;
+}
+.owner-crown{
+  width:64px;height:64px;border-radius:18px;
+  background:linear-gradient(135deg,var(--purple),#5b21b6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:30px;
+  box-shadow:0 0 30px rgba(124,58,237,0.4);
+  border:1.5px solid rgba(212,175,55,0.35);
+}
+.sidebar-brand h2{
+  font-family:'Cinzel',serif;font-size:15px;font-weight:700;
+  letter-spacing:1px;color:var(--white);text-align:center;
+}
+.sidebar-brand span{
+  font-size:10px;color:var(--gold);font-family:'Space Mono',monospace;
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+
+.sidebar-nav{flex:1;padding:14px 12px;}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;border-radius:11px;cursor:pointer;
+  transition:all var(--tr);color:var(--muted);
+  font-size:13.5px;font-weight:600;margin-bottom:4px;
+  border:1px solid transparent;
+}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:var(--white);}
+.nav-item.active{
+  background:var(--purple2);border-color:rgba(124,58,237,0.3);
+  color:var(--purple3);
+}
+.nav-item .ic{font-size:17px;width:22px;text-align:center;}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.owner-chip{
+  display:flex;align-items:center;gap:10px;padding:11px 13px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:11px;margin-bottom:10px;
+}
+.owner-chip .av{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#a8842a);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.owner-chip .name{font-size:12.5px;font-weight:700;color:var(--white);}
+.owner-chip .role{font-size:9.5px;color:var(--gold);font-family:'Space Mono',monospace;letter-spacing:1px;}
+.btn-logout{
+  width:100%;padding:10px;background:var(--red2);
+  border:1px solid rgba(232,58,58,0.25);border-radius:9px;
+  color:#ff9090;font-size:12.5px;font-weight:700;cursor:pointer;
+  font-family:'Sora',sans-serif;transition:all var(--tr);
+}
+.btn-logout:hover{background:rgba(232,58,58,0.25);color:white;}
+
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;}
+.topbar{
+  height:var(--topbar-h);background:rgba(12,10,22,0.9);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
+  padding:0 30px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar h1{font-family:'Cinzel',serif;font-size:18px;font-weight:700;letter-spacing:0.5px;}
+.topbar p{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:2px;}
+.topbar-clock{
+  font-family:'Space Mono',monospace;font-size:12.5px;color:var(--gold);
+  background:var(--gold2);padding:7px 14px;border-radius:9px;
+  border:1px solid rgba(212,175,55,0.2);
+}
+
+.content{padding:28px 30px;}
+.page{display:none;}
+.page.active{display:block;animation:fadeUp 0.3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.page-header h2{font-family:'Cinzel',serif;font-size:22px;font-weight:700;letter-spacing:0.5px;}
+.page-header p{font-size:12.5px;color:var(--muted);font-style:italic;margin-top:4px;}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;
+  transition:all var(--tr);
+}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--purple));opacity:0.7;}
+.stat-card:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:var(--shadow);}
+.stat-card .label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);font-weight:700;margin-bottom:10px;}
+.stat-card .value{font-size:30px;font-weight:800;color:var(--white);line-height:1;font-family:'Cinzel',serif;}
+.stat-card .sub{font-size:11px;color:var(--muted);margin-top:6px;font-style:italic;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+.card-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-header h3{font-size:15px;font-weight:700;font-family:'Cinzel',serif;letter-spacing:0.3px;}
+.card-body{padding:22px;}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;transition:all var(--tr);white-space:nowrap;}
+.btn:hover:not(:disabled){transform:translateY(-2px);}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;}
+.btn-purple{background:linear-gradient(135deg,var(--purple),#5b21b6);color:white;}
+.btn-purple:hover:not(:disabled){box-shadow:0 8px 24px rgba(124,58,237,0.4);}
+.btn-emerald{background:var(--emerald2);border:1px solid rgba(16,185,129,0.3);color:#5decda;}
+.btn-emerald:hover:not(:disabled){background:rgba(16,185,129,0.25);}
+.btn-gold{background:var(--gold2);border:1px solid rgba(212,175,55,0.3);color:var(--gold);}
+.btn-gold:hover:not(:disabled){background:rgba(212,175,55,0.25);}
+.btn-red{background:var(--red2);border:1px solid rgba(232,58,58,0.25);color:#ff9090;}
+.btn-red:hover:not(:disabled){background:rgba(232,58,58,0.22);}
+.btn-ghost{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover:not(:disabled){background:rgba(255,255,255,0.09);color:var(--white);}
+.btn-sm{padding:7px 13px;font-size:12px;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:480px;}
+thead{background:rgba(255,255,255,0.03);}
+th{padding:12px 16px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:14px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+tbody tr:hover{background:rgba(255,255,255,0.025);}
+tbody tr:last-child td{border-bottom:none;}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;}
+.badge-purple{background:var(--purple2);color:var(--purple3);}
+.badge-emerald{background:var(--emerald2);color:#6ee7b7;}
+.badge-gold{background:var(--gold2);color:var(--gold);}
+.badge-red{background:var(--red2);color:#fca5a5;}
+.badge-muted{background:rgba(255,255,255,0.06);color:var(--muted);}
+
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:7px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);font-weight:700;}
+.form-input{padding:11px 14px;background:rgba(255,255,255,0.04);border:1.5px solid var(--border);border-radius:10px;color:var(--white);font-family:'Sora',sans-serif;font-size:13.5px;outline:none;width:100%;transition:all var(--tr);}
+.form-input:focus{border-color:var(--purple3);box-shadow:0 0 0 3px rgba(124,58,237,0.12);}
+select.form-input option{background:var(--bg3);}
+
+.charts-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:20px;}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr;}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg3);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,0.6);animation:modalIn 0.3s cubic-bezier(0.16,1,0.3,1) both;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.94)translateY(20px);}to{opacity:1;transform:scale(1)translateY(0);}}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h3{font-family:'Cinzel',serif;font-size:16px;font-weight:700;}
+.modal-close{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--muted);font-size:16px;}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-state .icon{font-size:38px;margin-bottom:10px;}
+
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:8000;display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
+.toast{padding:12px 18px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;color:var(--white);box-shadow:0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:center;gap:10px;animation:toastIn 0.3s ease both;max-width:360px;}
+.toast.success{border-left:3px solid var(--emerald);}
+.toast.error{border-left:3px solid var(--red);}
+.toast.info{border-left:3px solid var(--purple);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .content{padding:18px;}
+  .mobile-menu-btn{display:flex!important;}
+}
+.mobile-menu-btn{display:none;width:38px;height:38px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:19px;align-items:center;justify-content:center;color:var(--white);}
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:199;display:none;}
+.sidebar-overlay.show{display:block;}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-badge">👑</div>
+    <h1>OWNER <span>COMMAND CENTER</span></h1>
+    <div class="sub">Eneo la Mwongozaji — AJPLUS Security</div>
+
+    <div class="lf-group">
+      <label>Email</label>
+      <input type="email" class="lf-input" id="ownerEmail" placeholder="owner@ajplus.co.tz" autocomplete="username">
+    </div>
+    <div class="lf-group">
+      <label>Password</label>
+      <input type="password" class="lf-input" id="ownerPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="login-btn" id="ownerLoginBtn" onclick="ownerLogin()">🔐 Ingia kwenye Mfumo</button>
+
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-foot">Ufikiaji huu ni kwa Mwongozaji wa Biashara pekee</div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="dashboard" id="ownerDashboard">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="owner-crown">👑</div>
+      <h2>AJPLUS</h2>
+      <span>Owner Center</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="openPage('overview',this)"><span class="ic">📊</span><span>Overview</span></div>
+      <div class="nav-item" onclick="openPage('revenue',this)"><span class="ic">💰</span><span>Revenue</span></div>
+      <div class="nav-item" onclick="openPage('admins',this)"><span class="ic">🛡️</span><span>Admins</span></div>
+      <div class="nav-item" onclick="openPage('reports',this)"><span class="ic">📑</span><span>Reports</span></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="owner-chip">
+        <div class="av">👑</div>
+        <div>
+          <div class="name" id="ownerNameDisplay">Owner</div>
+          <div class="role">OWNER</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="ownerLogout()">🚪 Toka</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+        <div>
+          <h1 id="topbarTitle">Overview</h1>
+          <p id="topbarSub">Muhtasari wa biashara nzima</p>
+        </div>
+      </div>
+      <div class="topbar-clock" id="clockDisplay">00:00:00</div>
+    </header>
+
+    <div class="content">
+
+      <!-- ===== OVERVIEW ===== -->
+      <section id="page-overview" class="page active">
+        <div class="page-header">
+          <div><h2>📊 Muhtasari wa Biashara</h2><p>Takwimu za mfumo mzima kwa wakati halisi</p></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card" style="--accent:var(--purple)">
+            <div class="label">Admins</div><div class="value" id="ovAdmins">—</div><div class="sub">Wasimamizi wa mfumo</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--emerald)">
+            <div class="label">Guards Wote</div><div class="value" id="ovGuards">—</div><div class="sub">Walinzi waliosajiliwa</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--gold)">
+            <div class="label">Wateja</div><div class="value" id="ovClients">—</div><div class="sub">Wateja hai</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--blue)">
+            <div class="label">Sites</div><div class="value" id="ovSites">—</div><div class="sub">Maeneo ya huduma</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--purple)">
+            <div class="label">Assignments Hai</div><div class="value" id="ovAssignments">—</div><div class="sub">Zinazoendelea</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--emerald)">
+            <div class="label">Mapato ya Mwezi</div><div class="value" id="ovRevenue">TZS —</div><div class="sub">Mwezi huu</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="card">
+            <div class="card-header"><h3>📈 Mapato — Miezi 6 Iliyopita</h3></div>
+            <div class="card-body"><canvas id="ovRevenueChart" height="200"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>🛡️ Guards kwa Hali</h3></div>
+            <div class="card-body"><canvas id="ovGuardsChart" height="200"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REVENUE ===== -->
+      <section id="page-revenue" class="page">
+        <div class="page-header">
+          <div><h2>💰 Mapato ya Biashara</h2><p>Invoices, malipo, na faida ya mfumo mzima</p></div>
+          <button class="btn btn-ghost btn-sm" onclick="loadRevenuePage()">🔄 Refresh</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card" style="--accent:var(--emerald)">
+            <div class="label">Mapato Mwezi Huu</div><div class="value" id="revMonthTotal">TZS —</div><div class="sub">Jumla ya invoices</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--gold)">
+            <div class="label">Yamelipwa</div><div class="value" id="revPaid">—</div><div class="sub">Invoices zilizolipwa</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--red)">
+            <div class="label">Yanasubiri</div><div class="value" id="revPending">—</div><div class="sub">Bado hazijalipwa</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--purple)">
+            <div class="label">Mishahara ya Guards</div><div class="value" id="revPayroll">TZS —</div><div class="sub">Gharama ya mwezi</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--blue)">
+            <div class="label">Faida Halisi</div><div class="value" id="revProfit">TZS —</div><div class="sub">Mapato − Mishahara</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>📄 Invoices Zote (Miezi 3 ya Mwisho)</h3></div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Mteja</th><th>Mwezi</th><th>Jumla (TZS)</th><th>Hali</th><th>Tarehe</th></tr></thead>
+                <tbody id="revInvoiceBody"><tr><td colspan="5"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== ADMINS ===== -->
+      <section id="page-admins" class="page">
+        <div class="page-header">
+          <div><h2>🛡️ Usimamizi wa Admins</h2><p>Ongeza, simamia au futa admin wa mfumo</p></div>
+          <button class="btn btn-purple" onclick="openAddAdminModal()">+ Admin Mpya</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Jina</th><th>Email</th><th>Hali</th><th>Aliongezwa</th><th>Vitendo</th></tr></thead>
+                <tbody id="adminsTableBody"><tr><td colspan="5"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REPORTS ===== -->
+      <section id="page-reports" class="page">
+        <div class="page-header">
+          <div><h2>📑 Ripoti za Mwezi</h2><p>Zalisha ripoti ya PDF au Excel ya mwezi wowote</p></div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="form-row" style="margin-bottom:20px;">
+              <div class="form-group">
+                <label>Chagua Mwezi</label>
+                <input type="month" class="form-input" id="reportMonth">
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-emerald" onclick="generateReportExcel()">📊 Pakua Excel (.xlsx)</button>
+              <button class="btn btn-gold" onclick="generateReportPDF()">📄 Pakua PDF</button>
+            </div>
+            <div style="margin-top:18px;font-size:12.5px;color:var(--muted);font-style:italic;">
+              Ripoti itajumuisha: mapato ya wateja, mishahara ya guards, idadi ya wateja/guards, na faida halisi ya mwezi uliochagua.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>👁️ Muhtasari wa Mwezi Uliochaguliwa</h3></div>
+          <div class="card-body">
+            <div class="stats-grid" id="reportPreviewGrid">
+              <div class="empty-state"><p>Chagua mwezi kuona muhtasari.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD ADMIN MODAL ===== -->
+<div class="modal-overlay" id="addAdminModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🛡️ Ongeza Admin Mpya</h3>
+      <button class="modal-close" onclick="closeModal('addAdminModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group full"><label>Jina Kamili *</label><input class="form-input" id="adm-name" placeholder="Jina la Admin"></div>
+        <div class="form-group full"><label>Email *</label><input class="form-input" type="email" id="adm-email" placeholder="admin@ajplus.co.tz"></div>
+        <div class="form-group full"><label>Password ya Awali *</label><input class="form-input" type="password" id="adm-pass" placeholder="Angalau herufi 6"></div>
+      </div>
+      <div id="adminModalError" style="display:none;margin-top:12px;padding:10px;background:var(--red2);border-left:3px solid var(--red);border-radius:6px;font-size:13px;color:#fca5a5;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addAdminModal')">Funga</button>
+      <button class="btn btn-purple" id="addAdminBtn" onclick="addNewAdmin()">✅ Hifadhi Admin</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="firebase-config.js"></script>
+<script>
+/* ================================================================
+   AJPLUS OWNER COMMAND CENTER
+   - Login tofauti (role: 'owner') — haiungani na guard/client/supervisor
+   - Inasoma data tu kutoka nodes zilizopo (haiandiki shughuli za kila siku)
+   - Overview, Revenue, Admins (CRUD), Reports (PDF/Excel)
+================================================================ */
+
+let db = null;
+let secondaryApp = null;
+let currentOwner = null;
+let allAdminsData = [];
+let revChartInst = null, guardsChartInst = null;
+
+/* ================================================================
+   LOGIN
+================================================================ */
+function ownerLogin() {
+  const email = document.getElementById('ownerEmail').value.trim();
+  const pass  = document.getElementById('ownerPassword').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) {
+    errEl.textContent = '⚠️ Jaza email na password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('ownerLoginBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inaingia...';
+
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(cred => {
+      return db.ref('users/' + cred.user.uid).once('value');
+    })
+    .then(snap => {
+      const data = snap.val() || {};
+      if (data.role !== 'owner') {
+        firebase.auth().signOut();
+        errEl.textContent = '❌ Akaunti hii si ya Owner. Ufikiaji umekataliwa.';
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = '🔐 Ingia kwenye Mfumo';
+        return;
+      }
+      currentOwner = { uid: firebase.auth().currentUser.uid, ...data };
+      document.getElementById('ownerNameDisplay').textContent = data.name || email;
+      showDashboard();
+    })
+    .catch(err => {
+      const msgs = {
+        'auth/wrong-password': 'Password si sahihi.',
+        'auth/user-not-found': 'Akaunti hii haipo.',
+        'auth/invalid-email': 'Email si sahihi.',
+        'auth/too-many-requests': 'Majaribio mengi sana. Subiri kidogo.',
+      };
+      errEl.textContent = '❌ ' + (msgs[err.code] || err.message);
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = '🔐 Ingia kwenye Mfumo';
+    });
+}
+
+function ownerLogout() {
+  if (!confirm('Je, unataka kutoka kwenye Owner Command Center?')) return;
+  firebase.auth().signOut().then(() => {
+    document.getElementById('ownerDashboard').classList.remove('show');
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('ownerEmail').value = '';
+    document.getElementById('ownerPassword').value = '';
+  });
+}
+
+function showDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('ownerDashboard').classList.add('show');
+  startClock();
+  loadOverview();
+  setupReportMonth();
+}
+
+/* ================================================================
+   INIT — Firebase setup
+================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof firebase === 'undefined') {
+    alert('❌ firebase-config.js haikupatikana!');
+    return;
+  }
+  try { db = firebase.database(); } catch(e) {
+    alert('❌ Tatizo la Firebase: ' + e.message);
+    return;
+  }
+
+  try {
+    const cfg = firebase.app().options;
+    secondaryApp = firebase.apps.find(a => a.name === 'secondary') ||
+                   firebase.initializeApp(cfg, 'secondary');
+  } catch(e) { console.warn('Secondary app:', e.message); }
+
+  /* Allow Enter key on login form */
+  document.getElementById('ownerPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') ownerLogin();
+  });
+
+  /* If already logged in as owner (session persists), skip login screen */
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user) return;
+    db.ref('users/' + user.uid).once('value').then(snap => {
+      const data = snap.val() || {};
+      if (data.role === 'owner') {
+        currentOwner = { uid: user.uid, ...data };
+        document.getElementById('ownerNameDisplay').textContent = data.name || user.email;
+        showDashboard();
+      }
+    });
+  });
+});
+
+function startClock() {
+  const el = document.getElementById('clockDisplay');
+  setInterval(() => { el.textContent = new Date().toLocaleTimeString('sw-TZ'); }, 1000);
+}
+
+/* ================================================================
+   NAVIGATION
+================================================================ */
+const PAGE_TITLES = {
+  overview: ['Overview', 'Muhtasari wa biashara nzima'],
+  revenue:  ['Revenue', 'Mapato na faida ya mfumo'],
+  admins:   ['Admins', 'Usimamizi wa wasimamizi'],
+  reports:  ['Reports', 'Ripoti za mwezi — PDF/Excel'],
+};
+
+function openPage(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('page-' + pageId)?.classList.add('active');
+  el?.classList.add('active');
+  const t = PAGE_TITLES[pageId] || [pageId, ''];
+  document.getElementById('topbarTitle').textContent = t[0];
+  document.getElementById('topbarSub').textContent   = t[1];
+
+  if (pageId === 'revenue') loadRevenuePage();
+  if (pageId === 'admins')  loadAdmins();
+  closeSidebarMobile();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar')?.classList.toggle('open');
+  document.getElementById('sidebarOverlay')?.classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebarOverlay')?.classList.remove('show');
+}
+function closeSidebarMobile() { if (window.innerWidth <= 900) closeSidebar(); }
+
+/* ================================================================
+   OVERVIEW
+================================================================ */
+function loadOverview() {
+  if (!db) return;
+
+  db.ref('users').orderByChild('role').equalTo('admin').once('value').then(snap => {
+    document.getElementById('ovAdmins').textContent = snap.numChildren();
+  });
+
+  db.ref('guards').once('value').then(snap => {
+    document.getElementById('ovGuards').textContent = snap.numChildren();
+    const statusCount = { online:0, offline:0 };
+    snap.forEach(c => {
+      const s = (c.val().status||'offline').toLowerCase();
+      statusCount[s] = (statusCount[s]||0) + 1;
+    });
+    renderGuardsChart(statusCount);
+  });
+
+  db.ref('clients').once('value').then(snap => {
+    let active = 0;
+    snap.forEach(c => { if (['active','approved'].includes((c.val().status||'').toLowerCase())) active++; });
+    document.getElementById('ovClients').textContent = active;
+  });
+
+  db.ref('sites').once('value').then(snap => {
+    document.getElementById('ovSites').textContent = snap.numChildren();
+  });
+
+  db.ref('assignments').once('value').then(snap => {
+    let active = 0;
+    snap.forEach(c => { if ((c.val().status||'') === 'active') active++; });
+    document.getElementById('ovAssignments').textContent = active;
+  });
+
+  const now = new Date();
+  const month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  db.ref('invoices').orderByChild('month').equalTo(month).once('value').then(snap => {
+    let total = 0;
+    snap.forEach(c => {
+      const inv = c.val();
+      total += inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+    });
+    document.getElementById('ovRevenue').textContent = 'TZS ' + Number(total).toLocaleString();
+  });
+
+  loadRevenueChartData();
+}
+
+function renderGuardsChart(statusCount) {
+  const ctx = document.getElementById('ovGuardsChart');
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (guardsChartInst) guardsChartInst.destroy();
+  guardsChartInst = new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Online', 'Offline'],
+      datasets: [{
+        data: [statusCount.online||0, statusCount.offline||0],
+        backgroundColor: ['#10b981', '#5b5478'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: '#9b93b8' } } },
+      cutout: '65%',
+    }
+  });
+}
+
+function loadRevenueChartData() {
+  if (!db) return;
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
+  }
+
+  db.ref('invoices').once('value').then(snap => {
+    const totals = {};
+    months.forEach(m => totals[m] = 0);
+    snap.forEach(c => {
+      const inv = c.val();
+      if (totals.hasOwnProperty(inv.month)) {
+        totals[inv.month] += inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+      }
+    });
+    renderRevenueChart(months, months.map(m => totals[m]));
+  });
+}
+
+function renderRevenueChart(labels, data) {
+  const ctx = document.getElementById('ovRevenueChart');
+  if (!ctx || typeof Chart === 'undefined') return;
+  if (revChartInst) revChartInst.destroy();
+  revChartInst = new Chart(ctx.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Mapato (TZS)',
+        data,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.12)',
+        borderWidth: 2.5, fill: true, tension: 0.4,
+        pointBackgroundColor: '#a78bfa',
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#9b93b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { ticks: { color: '#9b93b8' }, grid: { display: false } },
+      }
+    }
+  });
+}
+
+/* ================================================================
+   REVENUE PAGE
+================================================================ */
+function loadRevenuePage() {
+  if (!db) return;
+  const now = new Date();
+  const month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  db.ref('invoices').orderByChild('createdAt').limitToLast(100).once('value').then(snap => {
+    const rows = [];
+    let monthTotal = 0, paid = 0, pending = 0;
+    snap.forEach(c => {
+      const inv = { id: c.key, ...c.val() };
+      const total = inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+      rows.push({ ...inv, _total: total });
+      if (inv.month === month) {
+        monthTotal += total;
+        if (inv.status === 'paid') paid++; else pending++;
+      }
+    });
+    rows.reverse();
+
+    document.getElementById('revMonthTotal').textContent = 'TZS ' + Number(monthTotal).toLocaleString();
+    document.getElementById('revPaid').textContent = paid;
+    document.getElementById('revPending').textContent = pending;
+
+    const tbody = document.getElementById('revInvoiceBody');
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">💰</div><p>Hakuna invoices bado.</p></div></td></tr>`;
+    } else {
+      tbody.innerHTML = rows.slice(0, 30).map(inv => {
+        const sc = inv.status === 'paid' ? 'badge-emerald' : 'badge-gold';
+        const sl = inv.status === 'paid' ? '✅ Imelipwa' : '⏳ Inasubiri';
+        const date = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('sw-TZ') : '—';
+        return `<tr>
+          <td><strong>${inv.clientName||'—'}</strong></td>
+          <td>${inv.month||'—'}</td>
+          <td><strong style="color:var(--emerald);">${Number(inv._total).toLocaleString()}</strong></td>
+          <td><span class="badge ${sc}">${sl}</span></td>
+          <td style="font-size:12px;">${date}</td>
+        </tr>`;
+      }).join('');
+    }
+  });
+
+  /* Payroll total for current month */
+  db.ref('guards').once('value').then(gsnap => {
+    const guards = [];
+    gsnap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+    const promises = guards.map(g => db.ref(`payroll/${g.id}/${month}`).once('value').then(ps => ({ guard: g, p: ps.val() })));
+    Promise.all(promises).then(results => {
+      let payrollTotal = 0;
+      results.forEach(({ guard: g, p }) => {
+        const rate = g.dailyRate || 25000;
+        const days = p ? p.daysWorked : 26;
+        payrollTotal += rate * days;
+      });
+      document.getElementById('revPayroll').textContent = 'TZS ' + Number(payrollTotal).toLocaleString();
+
+      /* Profit = month revenue - payroll (uses cached monthTotal from above via re-read) */
+      db.ref('invoices').orderByChild('month').equalTo(month).once('value').then(snap => {
+        let rev = 0;
+        snap.forEach(c => {
+          const inv = c.val();
+          rev += inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+        });
+        const profit = rev - payrollTotal;
+        const el = document.getElementById('revProfit');
+        el.textContent = 'TZS ' + Number(profit).toLocaleString();
+        el.style.color = profit >= 0 ? 'var(--emerald)' : '#fca5a5';
+      });
+    });
+  });
+}
+
+/* ================================================================
+   ADMINS
+================================================================ */
+function loadAdmins() {
+  if (!db) return;
+  const tbody = document.getElementById('adminsTableBody');
+  tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  db.ref('users').orderByChild('role').equalTo('admin').once('value').then(snap => {
+    allAdminsData = [];
+    snap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
+
+    if (allAdminsData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">🛡️</div><p>Hakuna admin bado.</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = allAdminsData.map(a => {
+      const isActive = (a.status||'active') === 'active';
+      const sc = isActive ? 'badge-emerald' : 'badge-red';
+      const sl = isActive ? '✅ Active' : '⛔ Suspended';
+      const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('sw-TZ') : '—';
+      return `<tr>
+        <td><strong>${a.name||'—'}</strong></td>
+        <td style="font-size:12px;color:var(--muted);">${a.email||'—'}</td>
+        <td><span class="badge ${sc}">${sl}</span></td>
+        <td style="font-size:12px;">${date}</td>
+        <td style="display:flex;gap:6px;">
+          ${isActive
+            ? `<button class="btn btn-red btn-sm" onclick="suspendAdmin('${a.id}')">⛔ Suspend</button>`
+            : `<button class="btn btn-emerald btn-sm" onclick="reactivateAdmin('${a.id}')">✅ Activate</button>`}
+        </td>
+      </tr>`;
+    }).join('');
+  });
+}
+
+function openAddAdminModal() {
+  document.getElementById('adm-name').value  = '';
+  document.getElementById('adm-email').value = '';
+  document.getElementById('adm-pass').value  = '';
+  document.getElementById('adminModalError').style.display = 'none';
+  document.getElementById('addAdminModal').classList.add('open');
+}
+
+function addNewAdmin() {
+  const name  = document.getElementById('adm-name').value.trim();
+  const email = document.getElementById('adm-email').value.trim();
+  const pass  = document.getElementById('adm-pass').value.trim();
+  const errEl = document.getElementById('adminModalError');
+  errEl.style.display = 'none';
+
+  if (!name)  { errEl.textContent = '⚠️ Andika jina la admin.'; errEl.style.display = 'block'; return; }
+  if (!email) { errEl.textContent = '⚠️ Andika email.'; errEl.style.display = 'block'; return; }
+  if (!pass || pass.length < 6) { errEl.textContent = '⚠️ Password angalau herufi 6.'; errEl.style.display = 'block'; return; }
+
+  if (!secondaryApp) {
+    errEl.textContent = '❌ Tatizo la mfumo. Refresh ukurasa.'; errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('addAdminBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inahifadhi...';
+
+  secondaryApp.auth().createUserWithEmailAndPassword(email, pass)
+    .then(cred => {
+      const uid = cred.user.uid;
+      const userData = {
+        uid, name, email,
+        role: 'admin', status: 'active',
+        createdAt: Date.now(),
+        createdBy: currentOwner.uid,
+      };
+      return db.ref('users/' + uid).set(userData).then(() => secondaryApp.auth().signOut());
+    })
+    .then(() => {
+      document.getElementById('addAdminModal').classList.remove('open');
+      showToast(`✅ Admin "${name}" ameongezwa!`, 'success');
+      loadAdmins();
+    })
+    .catch(err => {
+      const msgs = {
+        'auth/email-already-in-use': 'Email hii tayari imetumika.',
+        'auth/invalid-email': 'Email si sahihi.',
+        'auth/weak-password': 'Password ni dhaifu sana.',
+      };
+      errEl.textContent = '❌ ' + (msgs[err.code] || err.message);
+      errEl.style.display = 'block';
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = '✅ Hifadhi Admin'; });
+}
+
+function suspendAdmin(id) {
+  if (!confirm('Suspend admin huyu? Hataweza kuingia mfumoni.')) return;
+  db.ref('users/' + id).update({ status: 'suspended' })
+    .then(() => { showToast('Admin amesimamishwa.', 'info'); loadAdmins(); })
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+function reactivateAdmin(id) {
+  db.ref('users/' + id).update({ status: 'active' })
+    .then(() => { showToast('Admin amerejeshwa.', 'success'); loadAdmins(); })
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+/* ================================================================
+   REPORTS — Excel & PDF generation
+================================================================ */
+function setupReportMonth() {
+  const now = new Date();
+  document.getElementById('reportMonth').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('reportMonth').addEventListener('change', loadReportPreview);
+  loadReportPreview();
+}
+
+function getReportData(month) {
+  return Promise.all([
+    db.ref('invoices').orderByChild('month').equalTo(month).once('value'),
+    db.ref('guards').once('value'),
+    db.ref('clients').once('value'),
+  ]).then(([invSnap, guardsSnap, clientsSnap]) => {
+    const invoices = [];
+    let revenueTotal = 0, paidCount = 0, pendingCount = 0;
+    invSnap.forEach(c => {
+      const inv = { id: c.key, ...c.val() };
+      const total = inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+      invoices.push({ ...inv, _total: total });
+      revenueTotal += total;
+      if (inv.status === 'paid') paidCount++; else pendingCount++;
+    });
+
+    const guards = [];
+    guardsSnap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+
+    let clientsActive = 0;
+    clientsSnap.forEach(c => { if (['active','approved'].includes((c.val().status||'').toLowerCase())) clientsActive++; });
+
+    return Promise.all(
+      guards.map(g => db.ref(`payroll/${g.id}/${month}`).once('value').then(ps => ({ guard: g, p: ps.val() })))
+    ).then(payrollResults => {
+      let payrollTotal = 0;
+      const payrollRows = payrollResults.map(({ guard: g, p }) => {
+        const rate = g.dailyRate || 25000;
+        const days = p ? p.daysWorked : 26;
+        const total = rate * days;
+        payrollTotal += total;
+        return { name: g.name||'—', station: g.station||'—', rate, days, total, status: p ? p.status : 'pending' };
+      });
+
+      return {
+        month, invoices, revenueTotal, paidCount, pendingCount,
+        guardsTotal: guards.length, clientsActive,
+        payrollTotal, payrollRows,
+        profit: revenueTotal - payrollTotal,
+      };
+    });
+  });
+}
+
+function loadReportPreview() {
+  const month = document.getElementById('reportMonth').value;
+  if (!month || !db) return;
+  const grid = document.getElementById('reportPreviewGrid');
+  grid.innerHTML = `<div class="empty-state"><p>Inapakia...</p></div>`;
+
+  getReportData(month).then(d => {
+    grid.innerHTML = `
+      <div class="stat-card" style="--accent:var(--emerald)"><div class="label">Mapato</div><div class="value">TZS ${Number(d.revenueTotal).toLocaleString()}</div><div class="sub">${d.invoices.length} invoices</div></div>
+      <div class="stat-card" style="--accent:var(--gold)"><div class="label">Mishahara</div><div class="value">TZS ${Number(d.payrollTotal).toLocaleString()}</div><div class="sub">${d.guardsTotal} guards</div></div>
+      <div class="stat-card" style="--accent:var(--purple)"><div class="label">Faida</div><div class="value" style="color:${d.profit>=0?'var(--emerald)':'#fca5a5'}">TZS ${Number(d.profit).toLocaleString()}</div><div class="sub">Mapato − Mishahara</div></div>
+      <div class="stat-card" style="--accent:var(--blue)"><div class="label">Wateja Hai</div><div class="value">${d.clientsActive}</div><div class="sub">Mwezi ${month}</div></div>
+    `;
+  });
+}
+
+function generateReportExcel() {
+  const month = document.getElementById('reportMonth').value;
+  if (!month) { showToast('Chagua mwezi kwanza.', 'error'); return; }
+
+  getReportData(month).then(d => {
+    const wb = XLSX.utils.book_new();
+
+    const summary = [
+      ['AJPLUS SECURITY — RIPOTI YA MWEZI'],
+      ['Mwezi', month],
+      [],
+      ['Mapato (TZS)', d.revenueTotal],
+      ['Mishahara ya Guards (TZS)', d.payrollTotal],
+      ['Faida Halisi (TZS)', d.profit],
+      [],
+      ['Idadi ya Invoices', d.invoices.length],
+      ['Invoices Zilizolipwa', d.paidCount],
+      ['Invoices Zinazosubiri', d.pendingCount],
+      ['Guards Wote', d.guardsTotal],
+      ['Wateja Hai', d.clientsActive],
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summary);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Muhtasari');
+
+    const invRows = [['Mteja','Mwezi','Guards','Rate/Siku','Siku','Jumla (TZS)','Hali']];
+    d.invoices.forEach(inv => {
+      invRows.push([inv.clientName||'—', inv.month, inv.guardsCount, inv.ratePerDay, inv.daysWorked, inv._total, inv.status]);
+    });
+    const wsInv = XLSX.utils.aoa_to_sheet(invRows);
+    XLSX.utils.book_append_sheet(wb, wsInv, 'Invoices');
+
+    const payRows = [['Guard','Kituo','Rate/Siku','Siku','Jumla (TZS)','Hali']];
+    d.payrollRows.forEach(p => {
+      payRows.push([p.name, p.station, p.rate, p.days, p.total, p.status]);
+    });
+    const wsPay = XLSX.utils.aoa_to_sheet(payRows);
+    XLSX.utils.book_append_sheet(wb, wsPay, 'Payroll');
+
+    XLSX.writeFile(wb, `AJPLUS_Ripoti_${month}.xlsx`);
+    showToast('✅ Excel imedownload!', 'success');
+  });
+}
+
+function generateReportPDF() {
+  const month = document.getElementById('reportMonth').value;
+  if (!month) { showToast('Chagua mwezi kwanza.', 'error'); return; }
+
+  getReportData(month).then(d => {
+    const win = window.open('', '_blank', 'width=800,height=700');
+    const rows = d.invoices.map(inv => `
+      <tr><td>${inv.clientName||'—'}</td><td>${inv.guardsCount}</td><td>${Number(inv.ratePerDay).toLocaleString()}</td><td>${inv.daysWorked}</td><td>${Number(inv._total).toLocaleString()}</td><td>${inv.status==='paid'?'Imelipwa':'Inasubiri'}</td></tr>
+    `).join('');
+    const payRows = d.payrollRows.map(p => `
+      <tr><td>${p.name}</td><td>${p.station}</td><td>${Number(p.rate).toLocaleString()}</td><td>${p.days}</td><td>${Number(p.total).toLocaleString()}</td></tr>
+    `).join('');
+
+    win.document.write(`
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Ripoti ${month}</title>
+      <style>
+        body{font-family:Arial,sans-serif;max-width:760px;margin:30px auto;padding:20px;color:#1e1b2e;}
+        .header{display:flex;justify-content:space-between;border-bottom:3px solid #7c3aed;padding-bottom:16px;margin-bottom:24px;}
+        .logo{font-size:22px;font-weight:900;color:#1e1b2e;}
+        h2{font-size:16px;margin:24px 0 10px;color:#5b21b6;}
+        table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+        th{background:#1e1b2e;color:white;padding:9px;text-align:left;font-size:12px;}
+        td{padding:8px;border-bottom:1px solid #e2e8f0;font-size:12px;}
+        .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+        .sbox{background:#f3f0ff;border-radius:8px;padding:14px;}
+        .sbox .l{font-size:11px;color:#64748b;}
+        .sbox .v{font-size:18px;font-weight:800;color:#1e1b2e;}
+        @media print{button{display:none;}}
+      </style></head><body>
+      <div class="header">
+        <div><div class="logo">👑 AJPLUS SECURITY</div><div style="font-size:12px;color:#64748b;">Ripoti ya Mwongozaji — Mwezi: ${month}</div></div>
+        <div style="text-align:right;font-size:12px;color:#64748b;">Tarehe: ${new Date().toLocaleDateString('sw-TZ')}</div>
+      </div>
+      <div class="summary">
+        <div class="sbox"><div class="l">Mapato</div><div class="v">TZS ${Number(d.revenueTotal).toLocaleString()}</div></div>
+        <div class="sbox"><div class="l">Mishahara</div><div class="v">TZS ${Number(d.payrollTotal).toLocaleString()}</div></div>
+        <div class="sbox"><div class="l">Faida Halisi</div><div class="v">TZS ${Number(d.profit).toLocaleString()}</div></div>
+        <div class="sbox"><div class="l">Wateja Hai</div><div class="v">${d.clientsActive}</div></div>
+      </div>
+      <h2>📄 Invoices</h2>
+      <table><tr><th>Mteja</th><th>Guards</th><th>Rate/Siku</th><th>Siku</th><th>Jumla (TZS)</th><th>Hali</th></tr>${rows || '<tr><td colspan="6">Hakuna invoices.</td></tr>'}</table>
+      <h2>🛡️ Mishahara ya Guards</h2>
+      <table><tr><th>Guard</th><th>Kituo</th><th>Rate/Siku</th><th>Siku</th><th>Jumla (TZS)</th></tr>${payRows || '<tr><td colspan="5">Hakuna data.</td></tr>'}</table>
+      <br><button onclick="window.print()" style="background:#1e1b2e;color:white;padding:10px 24px;border:none;border-radius:8px;cursor:pointer;font-size:14px;">🖨️ Print / Save as PDF</button>
+      </body></html>`);
+    win.document.close();
+  });
+}
+
+/* ================================================================
+   MODAL HELPERS / TOAST
+================================================================ */
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  }
+});
+
+function showToast(msg, type='info') {
+  const wrap = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+  toast.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  wrap.appendChild(toast);
+  setTimeout(() => toast.style.opacity = '0', 3200);
+  setTimeout(() => toast.remove(), 3600);
+}
+</script>
+</body>
+</html>
