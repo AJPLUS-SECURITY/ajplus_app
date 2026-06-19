@@ -16,13 +16,13 @@
 <meta property="og:title" content="AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi">
 <meta property="og:description" content="Mfumo wa kidijitali wa usimamizi wa walinzi, doria, na taarifa za matukio kwa makampuni ya ulinzi Tanzania.">
 <meta property="og:url" content="https://ajplussecurity.co.tz/">
-<meta property="og:image" content="https://ajplussecurity.co.tz/images/ajpluslogo.png">
+<meta property="og:image" content="https://ajplussecurity.co.tz/image/ajpluslogo.png">
 <meta property="og:locale" content="sw_TZ">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi">
 <meta name="twitter:description" content="Mfumo wa kidijitali wa usimamizi wa walinzi Tanzania.">
-<meta name="twitter:image" content="https://ajplussecurity.co.tz/images/ajpluslogo.png">
+<meta name="twitter:image" content="https://ajplussecurity.co.tz/image/ajpluslogo.png">
 
 <script type="application/ld+json">
 {
@@ -30,7 +30,7 @@
   "@type": "Organization",
   "name": "AJPLUS Security",
   "url": "https://ajplussecurity.co.tz",
-  "logo": "https://ajplussecurity.co.tz/images/ajpluslogo.png",
+  "logo": "https://ajplussecurity.co.tz/image/ajpluslogo.png",
   "description": "Mfumo wa kidijitali wa usimamizi wa walinzi, doria, na taarifa za matukio kwa makampuni ya ulinzi Tanzania.",
   "address": {
     "@type": "PostalAddress",
@@ -45,6 +45,15 @@
 </script>
 
 <link rel="icon" type="image/png" href="images/ajpluslogo.png">
+
+<!-- ================== PWA ================== -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#060d1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AJPLUS">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -309,6 +318,11 @@ function setStatus(msg) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  /* Register Service Worker for PWA install support */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
   if (typeof firebase === 'undefined') {
     setStatus('Tatizo la mfumo — inaelekeza...');
     finishSplash('Ajplussecurity_login.html');
