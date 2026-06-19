@@ -76,12 +76,22 @@ body{
   border:2px solid rgba(212,175,55,0.35);
   overflow:hidden;
   padding:10px;
+  animation:logoPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both, logoGlow 3s ease-in-out 0.7s infinite;
 }
 .login-badge img{
   width:100%;height:100%;object-fit:contain;
 }
 .login-badge .fallback-icon{
   font-size:32px;display:none;
+}
+@keyframes logoPop{
+  0%{opacity:0;transform:scale(0.3) rotate(-15deg);}
+  60%{opacity:1;transform:scale(1.12) rotate(4deg);}
+  100%{opacity:1;transform:scale(1) rotate(0deg);}
+}
+@keyframes logoGlow{
+  0%,100%{box-shadow:0 0 40px rgba(124,58,237,0.45), 0 10px 30px rgba(0,0,0,0.4);}
+  50%{box-shadow:0 0 64px rgba(212,175,55,0.5), 0 10px 30px rgba(0,0,0,0.4);}
 }
 .login-card h1{
   font-family:'Cinzel',serif;
@@ -137,6 +147,14 @@ body{
   text-align:center;margin-top:22px;font-size:11px;
   color:var(--muted2);font-style:italic;
 }
+
+.forgot-link{
+  display:block;text-align:center;margin-top:14px;
+  font-size:12px;color:var(--purple3);
+  text-decoration:none;cursor:pointer;
+  font-style:italic;transition:color var(--tr);
+}
+.forgot-link:hover{color:var(--gold);text-decoration:underline;}
 
 .spinner{
   width:15px;height:15px;border:2px solid rgba(255,255,255,0.25);
@@ -360,6 +378,8 @@ select.form-input option{background:var(--bg3);}
     </div>
 
     <button class="login-btn" id="ownerLoginBtn" onclick="ownerLogin()">🔐 Ingia kwenye Mfumo</button>
+
+    <a class="forgot-link" onclick="forgotPassword()">Umesahau password? Bonyeza hapa</a>
 
     <div class="login-err" id="loginErr"></div>
     <div class="login-foot">Ufikiaji huu ni kwa Mwongozaji wa Biashara pekee</div>
@@ -638,6 +658,42 @@ function ownerLogout() {
     document.getElementById('ownerEmail').value = '';
     document.getElementById('ownerPassword').value = '';
   });
+}
+
+function forgotPassword() {
+  const email = document.getElementById('ownerEmail').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+
+  if (!email) {
+    errEl.style.background = 'var(--gold2)';
+    errEl.style.borderLeftColor = 'var(--gold)';
+    errEl.style.color = 'var(--gold)';
+    errEl.textContent = '⚠️ Andika email yako kwenye sehemu ya Email kabla ya kubonyeza hapa.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(() => {
+      errEl.style.background = 'var(--emerald2)';
+      errEl.style.borderLeftColor = 'var(--emerald)';
+      errEl.style.color = '#6ee7b7';
+      errEl.textContent = `✅ Tumekutumia email ya kubadilisha password kwenye ${email}. Angalia inbox yako (na folder ya Spam).`;
+      errEl.style.display = 'block';
+    })
+    .catch(err => {
+      const msgs = {
+        'auth/user-not-found': 'Hatuna akaunti yenye email hii.',
+        'auth/invalid-email': 'Email si sahihi.',
+        'auth/too-many-requests': 'Majaribio mengi sana. Subiri kidogo kabla ya kujaribu tena.',
+      };
+      errEl.style.background = 'var(--red2)';
+      errEl.style.borderLeftColor = 'var(--red)';
+      errEl.style.color = '#fca5a5';
+      errEl.textContent = '❌ ' + (msgs[err.code] || err.message);
+      errEl.style.display = 'block';
+    });
 }
 
 function showDashboard() {
