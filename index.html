@@ -1,52 +1,879 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AJPLUS — Admin Command Center</title>
 
-<!-- ================== SEO / META ================== -->
-<title>AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi Tanzania</title>
-<meta name="description" content="AJPLUS Security ni mfumo wa kidijitali wa usimamizi wa walinzi (guard management) Tanzania — doria, taarifa za matukio (OB), ufuatiliaji wa GPS, na huduma za ulinzi kwa wateja na makampuni.">
-<meta name="keywords" content="AJPLUS Security, usalama Tanzania, security guard management, mlinzi, ulinzi Dar es Salaam, guard tracking system, occurrence book digital">
-<meta name="author" content="AJ PLUS COMPANY LIMITED">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://ajplussecurity.co.tz/">
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi">
-<meta property="og:description" content="Mfumo wa kidijitali wa usimamizi wa walinzi, doria, na taarifa za matukio kwa makampuni ya ulinzi Tanzania.">
-<meta property="og:url" content="https://ajplussecurity.co.tz/">
-<meta property="og:image" content="https://ajplussecurity.co.tz/images/ajpluslogo.png">
-<meta property="og:locale" content="sw_TZ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AJPLUS Security — Mfumo wa Usimamizi wa Ulinzi">
-<meta name="twitter:description" content="Mfumo wa kidijitali wa usimamizi wa walinzi Tanzania.">
-<meta name="twitter:image" content="https://ajplussecurity.co.tz/images/ajpluslogo.png">
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "AJPLUS Security",
-  "url": "https://ajplussecurity.co.tz",
-  "logo": "https://ajplussecurity.co.tz/images/ajpluslogo.png",
-  "description": "Mfumo wa kidijitali wa usimamizi wa walinzi, doria, na taarifa za matukio kwa makampuni ya ulinzi Tanzania.",
-  "address": {
-    "@type": "PostalAddress",
-    "addressCountry": "TZ",
-    "addressLocality": "Dar es Salaam"
-  },
-  "parentOrganization": {
-    "@type": "Organization",
-    "name": "AJ PLUS COMPANY LIMITED"
-  }
+ <style>
+:root{
+  --navy:#060d1a;--navy2:#0c1829;--navy3:#111f35;--navy4:#162340;
+  --gold:#EABF0B;--gold2:#f5d44a;--gold3:rgba(234,191,11,0.12);
+  --teal:#0fa894;--teal2:rgba(15,168,148,0.12);
+  --red:#e83a3a;--red2:rgba(232,58,58,0.12);
+  --green:#10b981;--green2:rgba(16,185,129,0.12);
+  --blue:#38bdf8;--blue2:rgba(56,189,248,0.12);
+  --purple:#a78bfa;--purple2:rgba(167,139,250,0.12);
+  --orange:#f59e0b;--orange2:rgba(245,158,11,0.12);
+  --white:#f0f4ff;--muted:#8a98b8;--muted2:#4a5568;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --sidebar-w:260px;--topbar-h:64px;
+  --card:rgba(12,24,41,0.8);--card2:rgba(17,31,53,0.9);
+  --radius:14px;--radius2:10px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --tr:0.22s ease;
 }
-</script>
 
-<link rel="icon" type="image/png" href="images/ajpluslogo.png">
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
-<!-- ================== PWA ================== -->
+html,body{height:100%;overflow:hidden;}
+
+body{
+  font-family:'Sora',sans-serif;
+  background:var(--navy);
+  color:var(--white);
+  display:flex;
+  font-size:14px;
+  line-height:1.5;
+}
+
+/* ======= SCROLLBAR ======= */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(234,191,11,0.3);border-radius:3px;}
+
+/* ======= SIDEBAR ======= */
+.sidebar{
+  width:var(--sidebar-w);
+  height:100vh;
+  background:var(--navy2);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  left:0;top:0;
+  z-index:200;
+  transition:transform var(--tr);
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+
+/* sidebar-brand defined below in logo animation section */
+.sidebar-brand-old-removed{display:none;}
+
+.brand-logo-sm{
+  width:40px;height:40px;
+  background:linear-gradient(135deg,var(--gold),#c9a309);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+  box-shadow:0 4px 16px rgba(234,191,11,0.3);
+}
+
+.brand-info h2{
+  font-size:14px;font-weight:800;
+  color:var(--white);letter-spacing:0.3px;
+}
+.brand-info span{
+  font-size:10px;color:var(--gold);
+  font-family:'Space Mono',monospace;
+  letter-spacing:1px;text-transform:uppercase;
+}
+
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto;}
+
+.nav-section-label{
+  font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted2);padding:14px 10px 6px;
+}
+
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 12px;border-radius:10px;
+  cursor:pointer;transition:all var(--tr);
+  color:var(--muted);font-size:13.5px;font-weight:500;
+  position:relative;margin-bottom:2px;
+  border:1px solid transparent;
+}
+.nav-item:hover{
+  background:rgba(255,255,255,0.05);
+  color:var(--white);
+}
+.nav-item.active{
+  background:var(--gold3);
+  border-color:rgba(234,191,11,0.2);
+  color:var(--gold);
+}
+.nav-item .nav-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center;}
+.nav-item .nav-label{flex:1;}
+.nav-item .nav-badge{
+  background:var(--red);color:white;
+  border-radius:20px;padding:2px 7px;
+  font-size:10px;font-weight:800;
+  display:none;
+}
+.nav-item .nav-badge.show{display:block;}
+
+.sidebar-footer{
+  padding:14px 16px;
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+
+.admin-chip{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:10px;
+}
+.admin-avatar{
+  width:32px;height:32px;
+  background:linear-gradient(135deg,var(--gold),#c9a309);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.admin-meta .name{font-size:12.5px;font-weight:700;color:var(--white);}
+.admin-meta .role{font-size:10px;color:var(--gold);font-family:'Space Mono',monospace;}
+
+.btn-logout{
+  width:100%;padding:9px;
+  background:rgba(232,58,58,0.1);
+  border:1px solid rgba(232,58,58,0.2);
+  border-radius:8px;color:#ff8080;
+  font-family:'Sora',sans-serif;
+  font-size:12.5px;font-weight:600;
+  cursor:pointer;transition:all var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-logout:hover{background:rgba(232,58,58,0.2);color:white;}
+
+/* ======= MAIN AREA ======= */
+.main{
+  margin-left:var(--sidebar-w);
+  flex:1;height:100vh;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ======= TOPBAR ======= */
+.topbar{
+  height:var(--topbar-h);
+  background:rgba(6,13,26,0.9);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  display:flex;align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+  position:sticky;top:0;z-index:100;
+}
+
+.topbar-left h1{font-size:18px;font-weight:800;color:var(--white);}
+.topbar-left p{font-size:11.5px;color:var(--muted);margin-top:1px;}
+
+.topbar-right{display:flex;align-items:center;gap:12px;}
+
+.topbar-clock{
+  font-family:'Space Mono',monospace;
+  font-size:13px;color:var(--gold);
+  background:var(--gold3);
+  padding:6px 12px;border-radius:8px;
+  border:1px solid rgba(234,191,11,0.15);
+}
+
+.topbar-btn{
+  width:38px;height:38px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  border-radius:9px;
+  cursor:pointer;font-size:17px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--tr);color:var(--muted);
+  position:relative;
+}
+.topbar-btn:hover{background:rgba(255,255,255,0.09);color:var(--white);}
+.topbar-btn .badge-dot{
+  position:absolute;top:6px;right:6px;
+  width:8px;height:8px;
+  background:var(--red);border-radius:50%;
+  display:none;animation:blink 1.5s infinite;
+}
+.topbar-btn .badge-dot.show{display:block;}
+
+/* Mobile menu btn */
+.mobile-menu-btn{
+  display:none;
+  width:38px;height:38px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  border-radius:9px;
+  cursor:pointer;font-size:20px;
+  align-items:center;justify-content:center;
+  color:var(--white);
+}
+
+/* ======= CONTENT AREA ======= */
+.content{
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:24px 28px;
+  background:
+    radial-gradient(ellipse at 80% 0%, rgba(234,191,11,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 100%, rgba(15,168,148,0.04) 0%, transparent 60%),
+    var(--navy);
+}
+
+.page{display:none;}
+.page.active{display:block;animation:fadeUp 0.3s ease both;}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(12px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ======= PAGE HEADER ======= */
+.page-header{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;flex-wrap:wrap;gap:12px;
+}
+.page-header h2{font-size:22px;font-weight:800;}
+.page-header p{font-size:12.5px;color:var(--muted);margin-top:3px;}
+
+/* ======= STATS GRID ======= */
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(175px,1fr));
+  gap:14px;
+  margin-bottom:22px;
+}
+
+.stat-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 18px 16px;
+  transition:all var(--tr);
+  position:relative;
+  overflow:hidden;
+  cursor:default;
+}
+.stat-card::after{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:2px;
+  background:var(--accent-c,var(--gold));
+  opacity:0.6;
+}
+.stat-card:hover{
+  border-color:var(--border2);
+  transform:translateY(-3px);
+  box-shadow:var(--shadow);
+}
+.stat-card .label{
+  font-size:11px;text-transform:uppercase;
+  letter-spacing:0.8px;color:var(--muted);
+  font-weight:700;margin-bottom:10px;
+}
+.stat-card .value{
+  font-size:32px;font-weight:800;
+  color:var(--white);line-height:1;
+}
+.stat-card .sub{
+  font-size:11px;color:var(--muted);
+  margin-top:6px;display:flex;align-items:center;gap:5px;
+}
+.stat-card .sub .live-dot{
+  width:6px;height:6px;
+  border-radius:50%;background:var(--green);
+  animation:blink 1.5s infinite;
+}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ======= CARDS ======= */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.card-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  justify-content:space-between;flex-wrap:wrap;gap:10px;
+}
+.card-header h3{font-size:15px;font-weight:700;color:var(--white);}
+.card-body{padding:20px;}
+
+/* ======= FORM ======= */
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;align-items:end;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);font-weight:700;}
+
+.form-input{
+  padding:10px 14px;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  color:var(--white);
+  font-family:'Sora',sans-serif;
+  font-size:13.5px;
+  outline:none;
+  transition:border-color var(--tr),background var(--tr),box-shadow var(--tr);
+  width:100%;
+}
+.form-input::placeholder{color:rgba(138,152,184,0.4);}
+.form-input:focus{
+  border-color:var(--gold);
+  background:rgba(234,191,11,0.04);
+  box-shadow:0 0 0 3px rgba(234,191,11,0.08);
+}
+select.form-input option{background:var(--navy3);color:var(--white);}
+
+/* ======= BUTTONS ======= */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 18px;border-radius:9px;
+  border:none;cursor:pointer;
+  font-family:'Sora',sans-serif;
+  font-size:13px;font-weight:700;
+  transition:all var(--tr);
+  white-space:nowrap;
+}
+.btn:hover:not(:disabled){transform:translateY(-2px);}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;}
+
+.btn-gold{background:linear-gradient(135deg,var(--gold),#c9a309);color:var(--navy);}
+.btn-gold:hover:not(:disabled){box-shadow:0 8px 24px rgba(234,191,11,0.35);}
+
+.btn-teal{background:rgba(15,168,148,0.15);border:1px solid rgba(15,168,148,0.3);color:#5decda;}
+.btn-teal:hover:not(:disabled){background:rgba(15,168,148,0.25);}
+
+.btn-red{background:rgba(232,58,58,0.12);border:1px solid rgba(232,58,58,0.25);color:#ff8080;}
+.btn-red:hover:not(:disabled){background:rgba(232,58,58,0.22);}
+
+.btn-blue{background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.25);color:#7dd3fc;}
+.btn-blue:hover:not(:disabled){background:rgba(56,189,248,0.22);}
+
+.btn-ghost{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover:not(:disabled){background:rgba(255,255,255,0.09);color:var(--white);}
+
+.btn-sm{padding:6px 12px;font-size:12px;}
+
+/* ======= TABLE ======= */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:500px;}
+thead{background:rgba(255,255,255,0.03);}
+th{
+  padding:11px 14px;text-align:left;
+  font-size:10.5px;text-transform:uppercase;
+  letter-spacing:0.7px;color:var(--muted);
+  font-weight:700;border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td{
+  padding:13px 14px;font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  vertical-align:middle;
+}
+tbody tr{transition:background var(--tr);}
+tbody tr:hover{background:rgba(255,255,255,0.03);}
+tbody tr:last-child td{border-bottom:none;}
+
+/* ======= BADGE / STATUS ======= */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.4px;
+  white-space:nowrap;
+}
+.badge-green{background:var(--green2);color:#6ee7b7;}
+.badge-red{background:var(--red2);color:#fca5a5;}
+.badge-gold{background:var(--gold3);color:var(--gold);}
+.badge-blue{background:var(--blue2);color:#7dd3fc;}
+.badge-purple{background:var(--purple2);color:#c4b5fd;}
+.badge-muted{background:rgba(255,255,255,0.06);color:var(--muted);}
+
+.status-dot{
+  width:7px;height:7px;
+  border-radius:50%;display:inline-block;
+}
+.dot-green{background:var(--green);animation:blink 2s infinite;}
+.dot-red{background:var(--red);}
+.dot-gold{background:var(--gold);}
+.dot-muted{background:var(--muted2);}
+
+/* ======= ALERT BANNER ======= */
+.alert-banner{
+  padding:12px 18px;border-radius:10px;
+  font-size:13px;font-weight:600;
+  display:flex;align-items:center;
+  justify-content:space-between;
+  gap:12px;flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.alert-banner.warning{
+  background:rgba(245,158,11,0.1);
+  border:1px solid rgba(245,158,11,0.25);
+  color:#fcd34d;
+}
+.alert-banner.danger{
+  background:var(--red2);
+  border:1px solid rgba(232,58,58,0.3);
+  color:#fca5a5;
+}
+.alert-banner.success{
+  background:var(--green2);
+  border:1px solid rgba(16,185,129,0.3);
+  color:#6ee7b7;
+}
+
+/* ======= TABS (OB Feed) ======= */
+.tab-bar{
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,0.02);
+}
+.tab-btn{
+  padding:7px 14px;border-radius:8px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--muted);cursor:pointer;
+  font-family:'Sora',sans-serif;
+  font-size:12.5px;font-weight:600;
+  transition:all var(--tr);white-space:nowrap;
+}
+.tab-btn:hover{background:rgba(255,255,255,0.05);color:var(--white);}
+.tab-btn.active{
+  background:var(--gold3);
+  border-color:rgba(234,191,11,0.25);
+  color:var(--gold);
+}
+.tab-panel{display:none;padding:20px;}
+.tab-panel.active{display:block;}
+
+/* ======= MAP ======= */
+#liveMap{height:380px;border-radius:10px;overflow:hidden;}
+
+/* ======= CHARTS ======= */
+.charts-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-bottom:18px;
+}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr;}}
+
+/* ======= ASSIGNMENT STATS ======= */
+.asgn-stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:12px;margin-bottom:18px;
+}
+.asgn-stat{
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px;text-align:center;
+}
+.asgn-stat .av{font-size:26px;font-weight:800;color:var(--white);}
+.asgn-stat .al{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;}
+
+/* ======= FILTER BTNS ======= */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.filter-btn{
+  padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border);
+  background:transparent;color:var(--muted);
+  cursor:pointer;font-size:12px;font-weight:600;
+  font-family:'Sora',sans-serif;
+  transition:all var(--tr);
+}
+.filter-btn:hover{background:rgba(255,255,255,0.05);color:var(--white);}
+.filter-btn.active{background:var(--gold3);border-color:rgba(234,191,11,0.25);color:var(--gold);}
+
+/* ======= MODAL ======= */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.75);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  z-index:1000;
+  display:none;
+  align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--navy3);
+  border:1px solid var(--border2);
+  border-radius:18px;
+  width:100%;max-width:560px;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 32px 80px rgba(0,0,0,0.6);
+  animation:modalIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(0.94)translateY(20px);}to{opacity:1;transform:scale(1)translateY(0);}}
+.modal-header{
+  padding:20px 24px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-header h3{font-size:17px;font-weight:800;}
+.modal-close{
+  background:rgba(255,255,255,0.06);
+  border:1px solid var(--border);
+  border-radius:8px;
+  width:32px;height:32px;
+  cursor:pointer;color:var(--muted);
+  font-size:16px;display:flex;
+  align-items:center;justify-content:center;
+  transition:all var(--tr);
+}
+.modal-close:hover{background:rgba(232,58,58,0.15);color:#ff8080;}
+.modal-body{padding:24px;}
+.modal-footer{
+  padding:16px 24px;
+  border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px;
+}
+
+/* ======= PANIC OVERLAY ======= */
+.panic-overlay{
+  position:fixed;inset:0;
+  background:rgba(232,58,58,0.96);
+  z-index:9999;display:none;
+  flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;
+  animation:panicFlash 0.6s infinite alternate;
+}
+.panic-overlay.show{display:flex;}
+@keyframes panicFlash{
+  from{background:rgba(232,58,58,0.96);}
+  to{background:rgba(180,20,20,0.98);}
+}
+@keyframes bounce{
+  from{transform:scale(1);}
+  to{transform:scale(1.15);}
+}
+
+/* ======= TOAST ======= */
+.toast-wrap{
+  position:fixed;bottom:24px;right:24px;
+  z-index:8000;
+  display:flex;flex-direction:column;gap:10px;
+  align-items:flex-end;
+}
+.toast{
+  padding:12px 18px;
+  background:var(--navy3);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  font-size:13px;font-weight:600;
+  color:var(--white);
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  display:flex;align-items:center;gap:10px;
+  animation:toastIn 0.3s ease both;
+  max-width:360px;
+}
+.toast.success{border-left:3px solid var(--green);}
+.toast.error{border-left:3px solid var(--red);}
+.toast.info{border-left:3px solid var(--gold);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* ======= EMPTY STATE ======= */
+.empty-state{
+  text-align:center;padding:40px 20px;
+  color:var(--muted);
+}
+.empty-state .icon{font-size:40px;margin-bottom:10px;}
+.empty-state p{font-size:13px;}
+
+/* ======= SIDEBAR OVERLAY (mobile) ======= */
+.sidebar-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:199;display:none;
+}
+.sidebar-overlay.show{display:block;}
+
+/* ======= RESPONSIVE ======= */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .mobile-menu-btn{display:flex;}
+  .content{padding:16px;}
+  .stats-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+}
+
+/* ======= CHAT WIDGET ======= */
+.chat-launcher{
+  position:fixed !important;
+  right:24px !important;
+  bottom:24px !important;
+  top:auto !important;
+  left:auto !important;
+  width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#c9a309);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;z-index:600;
+  box-shadow:0 6px 20px rgba(234,191,11,0.4);
+  border:none;transition:all var(--tr);
+  flex-shrink:0;
+}
+.chat-launcher:hover{transform:scale(1.1);}
+.chat-badge{
+  position:absolute;top:-4px;right:-4px;
+  width:20px;height:20px;
+  background:var(--red);color:white;
+  border-radius:50%;font-size:10px;
+  font-weight:800;display:none;
+  align-items:center;justify-content:center;
+  border:2px solid var(--navy);
+}
+.chat-badge.show{display:flex;}
+
+.chat-window{
+  position:fixed !important;
+  right:24px !important;
+  bottom:90px !important;
+  top:auto !important;
+  left:auto !important;
+  width:360px;max-width:calc(100vw - 32px);
+  max-height:75vh;
+  background:var(--navy3);
+  border:1px solid var(--border2);
+  border-radius:18px;
+  box-shadow:0 16px 60px rgba(0,0,0,0.5);
+  display:none;flex-direction:column;
+  z-index:600;overflow:hidden;
+}
+.chat-window.open{display:flex;}
+.chat-win-head{
+  background:var(--navy2);
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;
+  justify-content:space-between;
+}
+.chat-client-list{
+  max-height:160px;overflow-y:auto;
+  border-bottom:1px solid var(--border);
+}
+.chat-client-item{
+  padding:10px 16px;cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:12.5px;transition:background var(--tr);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.chat-client-item:hover{background:rgba(255,255,255,0.05);}
+.chat-client-item.active{background:rgba(234,191,11,0.08);}
+.chat-client-item .unread-pip{
+  background:var(--red);color:white;
+  border-radius:50%;width:17px;height:17px;
+  font-size:9px;font-weight:800;
+  display:none;align-items:center;justify-content:center;
+}
+.chat-client-item .unread-pip.show{display:flex;}
+.chat-thread-head{
+  padding:8px 16px;font-size:12px;
+  font-weight:700;color:var(--gold);
+  border-bottom:1px solid var(--border);
+  min-height:34px;background:rgba(234,191,11,0.04);
+}
+.chat-msgs{
+  flex:1;overflow-y:auto;padding:14px;
+  display:flex;flex-direction:column;gap:8px;
+  min-height:160px;max-height:220px;
+  background:rgba(255,255,255,0.02);
+}
+.chat-msg{
+  max-width:80%;padding:8px 12px;
+  border-radius:10px;font-size:12.5px;
+  line-height:1.45;clear:both;
+}
+.chat-msg.me{
+  background:var(--navy4);border:1px solid var(--border);
+  color:var(--white);float:right;
+  border-bottom-right-radius:3px;
+}
+.chat-msg.them{
+  background:rgba(255,255,255,0.05);
+  color:var(--white);float:left;
+  border-bottom-left-radius:3px;
+}
+.chat-msg.panic-msg{
+  background:rgba(232,58,58,0.12);
+  border:1.5px solid rgba(232,58,58,0.3);
+  color:#fca5a5;font-weight:700;float:left;
+}
+.chat-msg-time{font-size:9.5px;opacity:0.5;margin-top:3px;}
+.chat-input-row{
+  display:flex;gap:8px;padding:12px;
+  border-top:1px solid var(--border);
+}
+.chat-input-row input{
+  flex:1;background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  border-radius:8px;color:var(--white);
+  padding:9px 12px;font-family:'Sora',sans-serif;
+  font-size:12.5px;outline:none;
+  transition:border-color var(--tr);
+}
+.chat-input-row input:focus{border-color:var(--gold);}
+.chat-input-row input::placeholder{color:rgba(138,152,184,0.4);}
+.chat-send{
+  background:var(--gold3);border:1px solid rgba(234,191,11,0.25);
+  color:var(--gold);border-radius:8px;padding:9px 14px;
+  cursor:pointer;font-weight:700;font-size:13px;
+  transition:all var(--tr);
+}
+.chat-send:hover{background:rgba(234,191,11,0.2);}
+
+/* ======= GPS PHOTO ======= */
+.ob-photo{
+  width:44px;height:34px;object-fit:cover;
+  border-radius:5px;border:1px solid var(--border);
+  cursor:pointer;transition:transform var(--tr);
+}
+.ob-photo:hover{transform:scale(1.1);}
+.ob-gps-link{color:var(--blue);font-size:11px;text-decoration:none;}
+.ob-gps-link:hover{text-decoration:underline;}
+
+/* ======= SPINNER ======= */
+.spinner{
+  width:16px;height:16px;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:var(--white);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ======= PAYROLL ======= */
+.payroll-summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:14px;margin-bottom:20px;
+}
+
+/* ======= DARK MODE ======= */
+body.light-mode{
+  --navy:#f0f2f5;--navy2:#ffffff;--navy3:#f8fafc;--navy4:#e2e8f0;
+  --gold:#c9a309;--gold2:#EABF0B;--gold3:rgba(201,163,9,0.1);
+  --white:#1e293b;--muted:#64748b;--muted2:#94a3b8;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.12);
+  --card:rgba(255,255,255,0.95);--card2:rgba(248,250,252,0.95);
+  --shadow:0 4px 24px rgba(0,0,0,0.1);
+}
+body.light-mode .sidebar{background:#1e293b;}
+body.light-mode .sidebar .nav-item{color:#94a3b8;}
+body.light-mode .sidebar .nav-item:hover{background:rgba(255,255,255,0.08);color:white;}
+body.light-mode .sidebar .nav-item.active{background:rgba(234,191,11,0.15);color:var(--gold2);}
+body.light-mode .sidebar .brand-info h2{color:white;}
+body.light-mode .sidebar .admin-chip{background:rgba(255,255,255,0.08);}
+body.light-mode .sidebar .admin-meta .name{color:white;}
+body.light-mode .sidebar .nav-section-label{color:#64748b;}
+body.light-mode .topbar{background:rgba(255,255,255,0.95);border-color:rgba(0,0,0,0.08);}
+body.light-mode .topbar-left h1{color:#0f172a;}
+body.light-mode .topbar-left p{color:#64748b;}
+body.light-mode .topbar-clock{background:rgba(201,163,9,0.1);color:#c9a309;border-color:rgba(201,163,9,0.2);}
+body.light-mode .topbar-btn{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.1);color:#64748b;}
+body.light-mode .content{background:#f0f2f5;}
+body.light-mode .card{background:white;border-color:rgba(0,0,0,0.08);}
+body.light-mode .card-header h3{color:#0f172a;}
+body.light-mode table th{color:#64748b;}
+body.light-mode table td{color:#1e293b;}
+body.light-mode tbody tr:hover{background:#f8fafc;}
+body.light-mode .form-input{background:#f8fafc;border-color:#e2e8f0;color:#1e293b;}
+body.light-mode .stat-card{background:white;border-color:rgba(0,0,0,0.08);}
+body.light-mode .stat-card .label{color:#64748b;}
+body.light-mode .stat-card .value{color:#0f172a;}
+body.light-mode .page-header h2{color:#0f172a;}
+body.light-mode .asgn-stat{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.08);}
+body.light-mode .asgn-stat .av{color:#0f172a;}
+
+/* ======= LOGO ANIMATION ======= */
+.sidebar-brand {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  gap:10px;
+}
+.brand-logo-wrap {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:4px;
+}
+.brand-logo-img {
+  width:80px;
+  height:80px;
+  object-fit:contain;
+  animation:floatLogo 4s ease-in-out infinite, glowLogo 4s ease-in-out infinite;
+  filter:drop-shadow(0 4px 16px rgba(234,191,11,0.4));
+}
+.brand-logo-fallback {
+  width:50px;height:50px;
+  background:linear-gradient(135deg,var(--gold),#c9a309);
+  border-radius:12px;
+  align-items:center;justify-content:center;
+  font-size:24px;
+  box-shadow:0 4px 16px rgba(234,191,11,0.3);
+  animation:floatLogo 4s ease-in-out infinite;
+}
+@keyframes floatLogo {
+  0%   { transform:translateY(0px) rotate(0deg); }
+  25%  { transform:translateY(-6px) rotate(1deg); }
+  50%  { transform:translateY(-10px) rotate(0deg); }
+  75%  { transform:translateY(-6px) rotate(-1deg); }
+  100% { transform:translateY(0px) rotate(0deg); }
+}
+@keyframes glowLogo {
+  0%,100% { filter:drop-shadow(0 4px 12px rgba(234,191,11,0.3)); }
+  50%      { filter:drop-shadow(0 8px 24px rgba(234,191,11,0.7)); }
+}
+.brand-info {
+  text-align:center;
+}
+.brand-info h2 {
+  font-size:15px;font-weight:800;
+  color:var(--white);letter-spacing:0.3px;
+  text-align:center;
+}
+.brand-info span {
+  font-size:10px;color:var(--gold);
+  font-family:'Space Mono',monospace;
+  letter-spacing:1px;text-transform:uppercase;
+  text-align:center;display:block;
+}
+</style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#060d1a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -54,325 +881,2986 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AJPLUS">
 <link rel="apple-touch-icon" href="icon-192x192.png">
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Sora:ital,wght@0,400;0,600;1,400;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-
-<style>
-  :root{
-    --navy:#060d1a;
-    --navy2:#0c1829;
-    --gold:#EABF0B;
-    --gold2:#f5d44a;
-    --white:#f0f4ff;
-    --muted:#8a98b8;
-    --red:#c0392b;
-  }
-  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-
-  html,body{
-    height:100%;
-    overflow:hidden;
-    font-family:'Sora',sans-serif;
-  }
-
-  body{
-    background:var(--navy);
-    color:var(--white);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:relative;
-  }
-
-  .bg-glow{
-    position:fixed;inset:0;
-    background:
-      radial-gradient(ellipse 60% 50% at 50% 28%, rgba(234,191,11,0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 45% 35% at 85% 85%, rgba(192,57,43,0.10) 0%, transparent 70%),
-      radial-gradient(ellipse 45% 35% at 15% 85%, rgba(15,168,148,0.08) 0%, transparent 70%),
-      var(--navy);
-    z-index:0;
-  }
-
-  .vignette{
-    position:fixed;inset:0;
-    background:radial-gradient(ellipse 80% 80% at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%);
-    z-index:1;
-    pointer-events:none;
-  }
-
-  .splash{
-    position:relative;
-    z-index:2;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:20px;
-    animation:fadeContainer 0.6s ease both;
-  }
-
-  @keyframes fadeContainer{
-    from{opacity:0;}
-    to{opacity:1;}
-  }
-
-  .logo-ring-wrap{
-    position:relative;
-    width:176px;height:176px;
-    display:flex;align-items:center;justify-content:center;
-  }
-
-  .logo-ring{
-    position:absolute;
-    inset:0;
-    border-radius:50%;
-    border:2px solid transparent;
-    border-top-color:var(--gold);
-    border-right-color:rgba(234,191,11,0.3);
-    animation:spinRing 1.6s linear infinite;
-  }
-
-  .logo-ring.delay{
-    inset:16px;
-    border-top-color:rgba(192,57,43,0.55);
-    border-right-color:transparent;
-    animation:spinRing 2.3s linear infinite reverse;
-  }
-
-  @keyframes spinRing{
-    to{transform:rotate(360deg);}
-  }
-
-  .logo-core{
-    width:148px;height:148px;
-    border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #0e1b30, var(--navy2) 70%);
-    border:1px solid rgba(234,191,11,0.25);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 0 44px rgba(234,191,11,0.32), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.4);
-    animation:floatLogo 3.2s ease-in-out infinite, glowPulse 3.2s ease-in-out infinite;
-    z-index:1;
-    overflow:hidden;
-    padding:14px;
-  }
-
-  .logo-core img{
-    width:100%;height:100%;
-    object-fit:contain;
-  }
-
-  .logo-core .fallback-icon{
-    font-size:54px;
-    display:none;
-  }
-
-  @keyframes floatLogo{
-    0%,100%{transform:translateY(0);}
-    50%{transform:translateY(-8px);}
-  }
-
-  @keyframes glowPulse{
-    0%,100%{box-shadow:0 0 36px rgba(234,191,11,0.26), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.4);}
-    50%{box-shadow:0 0 60px rgba(234,191,11,0.5), 0 14px 40px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.4);}
-  }
-
-  .brand-text{
-    text-align:center;
-    animation:riseUp 0.7s ease 0.15s both;
-  }
-
-  @keyframes riseUp{
-    from{opacity:0;transform:translateY(14px);}
-    to{opacity:1;transform:translateY(0);}
-  }
-
-  .brand-text h1{
-    font-family:'Cinzel',serif;
-    font-size:30px;
-    font-weight:700;
-    letter-spacing:2.5px;
-    color:var(--white);
-  }
-
-  .brand-text h1 span{
-    color:var(--gold);
-    font-weight:800;
-  }
-
-  .brand-text p{
-    font-style:italic;
-    font-weight:400;
-    font-size:13px;
-    font-family:'Sora',sans-serif;
-    letter-spacing:1.2px;
-    color:var(--muted);
-    margin-top:8px;
-  }
-
-  .load-bar-wrap{
-    width:230px;
-    height:4px;
-    background:rgba(255,255,255,0.08);
-    border-radius:10px;
-    overflow:hidden;
-    margin-top:10px;
-  }
-
-  .load-bar{
-    height:100%;
-    width:0%;
-    background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold));
-    border-radius:10px;
-    animation:loadProgress 2.6s ease forwards;
-  }
-
-  @keyframes loadProgress{
-    0%{width:0%;}
-    100%{width:100%;}
-  }
-
-  .status-text{
-    font-style:italic;
-    font-size:12px;
-    color:var(--muted);
-    font-family:'Sora',sans-serif;
-    letter-spacing:0.4px;
-    margin-top:2px;
-  }
-
-  .splash-wrap{
-    position:fixed;inset:0;
-    display:flex;align-items:center;justify-content:center;
-    transition:opacity 0.45s ease, transform 0.45s ease;
-  }
-
-  .splash-wrap.leaving{
-    opacity:0;
-    transform:scale(1.03);
-  }
-</style>
 </head>
 <body>
 
-<div class="bg-glow"></div>
-<div class="vignette"></div>
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-<div class="splash-wrap" id="splashWrap">
-  <div class="splash">
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo-wrap">
+      <img src="image/ajpluslogo.png" alt="AJPLUS Logo" class="brand-logo-img"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="brand-logo-fallback" style="display:none;">🛡️</div>
+    </div>
+    <div class="brand-info">
+      <h2>AJPLUS</h2>
+      <span>Command Center</span>
+    </div>
+  </div>
 
-    <div class="logo-ring-wrap">
-      <div class="logo-ring"></div>
-      <div class="logo-ring delay"></div>
-      <div class="logo-core">
-        <img src="images/ajpluslogo.png" alt="AJPLUS Security Logo"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <span class="fallback-icon">🛡️</span>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Mwelekeo</div>
+
+    <div class="nav-item active" onclick="openPage('dashboard',this)">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="openPage('guards',this)">
+      <span class="nav-icon">🛡️</span>
+      <span class="nav-label">Guards</span>
+    </div>
+    <div class="nav-item" onclick="openPage('clients',this)">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Wateja</span>
+    </div>
+    <div class="nav-item" onclick="openPage('assignments',this)">
+      <span class="nav-icon">🔗</span>
+      <span class="nav-label">Assignments</span>
+    </div>
+
+    <div class="nav-section-label">Ufuatiliaji</div>
+
+    <div class="nav-item" onclick="openPage('pending',this)">
+      <span class="nav-icon">⏳</span>
+      <span class="nav-label">Wateja Wanaongoja</span>
+      <span class="nav-badge" id="pendingBadge">0</span>
+    </div>
+    <div class="nav-item" onclick="openPage('ob',this)">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">OB Live Feed</span>
+    </div>
+    <div class="nav-item" onclick="openPage('maps',this)">
+      <span class="nav-icon">🗺️</span>
+      <span class="nav-label">Live GPS</span>
+    </div>
+
+    <div class="nav-section-label">Usimamizi</div>
+
+    <div class="nav-item" onclick="openPage('reports',this)">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">Ripoti</span>
+    </div>
+    <div class="nav-item" onclick="openPage('analytics',this)">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">Analytics</span>
+    </div>
+    <div class="nav-item" onclick="openPage('payroll',this)">
+      <span class="nav-icon">💼</span>
+      <span class="nav-label">Payroll & Invoices</span>
+    </div>
+    <div class="nav-item" onclick="openPage('settings',this)">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Mipangilio</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-chip">
+      <div class="admin-avatar">👑</div>
+      <div class="admin-meta">
+        <div class="name" id="adminNameDisplay">Admin</div>
+        <div class="role">ADMINISTRATOR</div>
       </div>
     </div>
+    <button class="btn-logout" onclick="doLogout()">🚪 Toka Mfumoni</button>
+  </div>
+</aside>
 
-    <div class="brand-text">
-      <h1>AJPLUS <span>SECURITY</span></h1>
-      <p>Command &amp; Control System</p>
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-left">
+        <h1 id="topbarTitle">Dashboard</h1>
+        <p id="topbarSub">Habari za mfumo kwa wakati halisi</p>
+      </div>
     </div>
-
-    <div class="load-bar-wrap">
-      <div class="load-bar"></div>
+    <div class="topbar-right">
+      <div class="topbar-clock" id="clockDisplay">00:00:00</div>
+      <button class="topbar-btn" id="themeToggleBtn" title="Mwanga/Giza" onclick="toggleTheme()">🌙</button>
+      <button class="topbar-btn" id="emergencyBtn" title="Dharura" onclick="openPage('ob',document.querySelector('[onclick*=ob]'))">
+        🚨
+        <span class="badge-dot" id="emergencyDot"></span>
+      </button>
     </div>
-    <div class="status-text" id="statusText">Inaanzisha mfumo...</div>
+  </header>
 
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ====== DASHBOARD ====== -->
+    <section id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div>
+          <h2>📊 Dashboard</h2>
+          <p>Muhtasari wa mfumo wote kwa wakati halisi</p>
+        </div>
+      </div>
+
+      <div id="dashboardAlerts"></div>
+
+      <div class="stats-grid">
+        <div class="stat-card" style="--accent-c:var(--gold)">
+          <div class="label">Guards Wote</div>
+          <div class="value" id="valGuards">—</div>
+          <div class="sub"><span class="live-dot"></span> Live</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--green)">
+          <div class="label">Wateja Waliopewa Idhini</div>
+          <div class="value" id="valApproved">—</div>
+          <div class="sub">Wateja hai</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--orange)">
+          <div class="label">Wanaongoja</div>
+          <div class="value" id="valPending">—</div>
+          <div class="sub">Inahitaji idhini</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--teal)">
+          <div class="label">Guards Online</div>
+          <div class="value" id="valOnline">—</div>
+          <div class="sub"><span class="live-dot"></span> Sasa hivi</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--red)">
+          <div class="label">Dharura / Emergency</div>
+          <div class="value" id="valEmergency">—</div>
+          <div class="sub">Tahadhari za sasa</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--blue)">
+          <div class="label">Ripoti za Leo</div>
+          <div class="value" id="valReports">—</div>
+          <div class="sub">Zimetumwa leo</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--purple)">
+          <div class="label">Mapato ya Mwezi</div>
+          <div class="value" id="valRevenue">TZS —</div>
+          <div class="sub">Monthly revenue</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--teal)">
+          <div class="label">Assignments Hai</div>
+          <div class="value" id="valAssignments">—</div>
+          <div class="sub">Zinazoendelea</div>
+        </div>
+      </div>
+
+      <!-- Recent activity -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🕐 Shughuli za Hivi Karibuni</h3>
+          <button class="btn btn-ghost btn-sm" onclick="openPage('reports',document.querySelector('[onclick*=reports]'))">Zote →</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Muda</th><th>Aina</th><th>Mlinzi / Mteja</th><th>Eneo</th><th>Hali</th></tr>
+              </thead>
+              <tbody id="recentActivityBody">
+                <tr><td colspan="5"><div class="empty-state"><div class="icon">📋</div><p>Inapakia...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== GUARDS ====== -->
+    <section id="page-guards" class="page">
+      <div class="page-header">
+        <div><h2>🛡️ Usimamizi wa Guards</h2><p>Ongeza, hariri na simamia walinzi wote</p></div>
+        <button class="btn btn-gold" onclick="openAddGuardModal()">+ Guard Mpya</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Walinzi Wote</h3>
+          <input type="text" class="form-input" style="width:220px;padding:7px 12px;" placeholder="🔍 Tafuta mlinzi..." oninput="filterGuardsTable(this.value)">
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Jina</th><th>Email</th><th>Simu</th><th>Kituo</th><th>Hali</th><th>Assignment</th><th>Vitendo</th></tr>
+              </thead>
+              <tbody id="guardsTableBody">
+                <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Inapakia...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== CLIENTS ====== -->
+    <section id="page-clients" class="page">
+      <div class="page-header">
+        <div><h2>👥 Wateja</h2><p>Simamia wateja wote wa AJPLUS Security</p></div>
+        <button class="btn btn-gold" onclick="openAddClientModal()">+ Mteja Mpya</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Wateja Wote</h3>
+          <input type="text" class="form-input" style="width:220px;padding:7px 12px;" placeholder="🔍 Tafuta mteja..." oninput="filterClientsTable(this.value)">
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Jina</th><th>Eneo / Site</th><th>Simu</th><th>Guard Aliyewekwa</th><th>Hali</th><th>Vitendo</th></tr>
+              </thead>
+              <tbody id="clientsTableBody">
+                <tr><td colspan="6"><div class="empty-state"><div class="icon">⏳</div><p>Inapakia...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== ASSIGNMENTS ====== -->
+    <section id="page-assignments" class="page">
+      <div class="page-header">
+        <div><h2>🔗 Assignments</h2><p>Unganisha guards na wateja</p></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="loadAssignments()">🔄 Refresh</button>
+          <button class="btn btn-gold" onclick="openNewAssignmentModal()">+ Assignment Mpya</button>
+        </div>
+      </div>
+
+      <div class="asgn-stats">
+        <div class="asgn-stat"><div class="av" id="asgnActive">—</div><div class="al">Zinazoendelea</div></div>
+        <div class="asgn-stat"><div class="av" id="asgnPending">—</div><div class="al">Pending</div></div>
+        <div class="asgn-stat"><div class="av" id="asgnGuards">—</div><div class="al">Guards waliowekwa</div></div>
+        <div class="asgn-stat"><div class="av" id="asgnClients">—</div><div class="al">Clients wanaohudumika</div></div>
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="filterAsgn('all',this)">Zote</button>
+        <button class="filter-btn" onclick="filterAsgn('active',this)">🟢 Hai</button>
+        <button class="filter-btn" onclick="filterAsgn('pending',this)">🟡 Pending</button>
+        <button class="filter-btn" onclick="filterAsgn('ended',this)">⚫ Zilizoisha</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Mteja</th><th>Eneo</th><th>Guard</th><th>Supervisor</th><th>Tarehe</th><th>Hali</th><th>Vitendo</th></tr>
+              </thead>
+              <tbody id="assignmentTableBody">
+                <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Inapakia...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== PENDING CLIENTS ====== -->
+    <section id="page-pending" class="page">
+      <div class="page-header">
+        <div><h2>⏳ Wateja Wanaongoja Idhini</h2><p>Pitia na idhinisha au kataa maombi mapya</p></div>
+        <button class="btn btn-ghost btn-sm" onclick="loadPendingClients()">🔄 Refresh</button>
+      </div>
+      <div id="pendingAlertBanner"></div>
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Tarehe</th><th>Jina</th><th>Kampuni</th><th>Eneo / Site</th><th>Simu</th><th>Guards Zinazohitajika</th><th>Hali</th><th>Vitendo</th></tr>
+              </thead>
+              <tbody id="pendingTableBody">
+                <tr><td colspan="8"><div class="empty-state"><div class="icon">⏳</div><p>Inapakia...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== OB FEED ====== -->
+    <section id="page-ob" class="page">
+      <div class="page-header">
+        <div><h2>📋 OB Live Feed</h2><p>Data za muda halisi kutoka kwa guards</p></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="loadCurrentOBTab()">🔄 Refresh</button>
+          <button class="btn btn-teal btn-sm" onclick="obExportAll()">📥 Export Zote</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchOB('gate',this)">🚪 Gate</button>
+          <button class="tab-btn" onclick="switchOB('patrol',this)">🕐 Doria</button>
+          <button class="tab-btn" onclick="switchOB('incidents',this)">🚨 Matukio</button>
+          <button class="tab-btn" onclick="switchOB('vehicles',this)">🚗 Magari</button>
+          <button class="tab-btn" onclick="switchOB('keys',this)">🔑 Funguo</button>
+          <button class="tab-btn" onclick="switchOB('property',this)">📦 Property</button>
+          <button class="tab-btn" onclick="switchOB('glive',this)">📍 Guards Live</button>
+        </div>
+
+        <div id="ob-gate" class="tab-panel active">
+          <div class="table-wrap"><table><thead><tr><th>Jina</th><th>ID</th><th>Nia</th><th>Gari</th><th>Wakati Ndani</th><th>Wakati Nje</th><th>GPS</th><th>Picha</th><th>Hali</th><th>Mlinzi</th></tr></thead><tbody id="ob-gate-body"><tr><td colspan="10"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+        <div id="ob-patrol" class="tab-panel">
+          <div class="table-wrap"><table><thead><tr><th>Muda</th><th>Mlinzi</th><th>Site</th><th>Eneo</th><th>Hali</th><th>Hewa</th><th>GPS</th><th>Picha</th><th>Maelezo</th></tr></thead><tbody id="ob-patrol-body"><tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+        <div id="ob-incidents" class="tab-panel">
+          <div class="table-wrap"><table><thead><tr><th>Tarehe/Muda</th><th>Eneo</th><th>Aina</th><th>Kiwango</th><th>Mlinzi</th><th>Polisi</th><th>GPS</th><th>Picha</th><th>Angalia</th></tr></thead><tbody id="ob-incidents-body"><tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+        <div id="ob-vehicles" class="tab-panel">
+          <div class="table-wrap"><table><thead><tr><th>Nambari</th><th>Dereva</th><th>Mzigo</th><th>Ndani</th><th>Nje</th><th>Idhini</th><th>GPS</th><th>Picha</th><th>Hali</th></tr></thead><tbody id="ob-vehicles-body"><tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+        <div id="ob-keys" class="tab-panel">
+          <div id="keysAlertBox" style="display:none;margin:14px;padding:10px 14px;background:rgba(232,58,58,0.1);border-left:3px solid var(--red);border-radius:8px;font-size:13px;color:#fca5a5;font-weight:600;"></div>
+          <div class="table-wrap"><table><thead><tr><th>Funguo</th><th>Mpokeaji</th><th>Wakati Nje</th><th>Wakati Ndani</th><th>Hali</th><th>GPS</th><th>Mlinzi</th></tr></thead><tbody id="ob-keys-body"><tr><td colspan="7"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+        <div id="ob-property" class="tab-panel">
+          <div class="table-wrap"><table><thead><tr><th>Kitu</th><th>Wingi</th><th>Mchukuaji</th><th>Idhini Na</th><th>Ref</th><th>Muda</th><th>GPS</th><th>Picha</th><th>Mlinzi</th></tr></thead><tbody id="ob-property-body"><tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+        <div id="ob-glive" class="tab-panel">
+          <div class="table-wrap"><table><thead><tr><th>Mlinzi</th><th>Site</th><th>GPS</th><th>Mara ya Mwisho</th><th>Hali</th><th>Ramani</th></tr></thead><tbody id="ob-glive-body"><tr><td colspan="6"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== MAPS ====== -->
+    <section id="page-maps" class="page">
+      <div class="page-header">
+        <div><h2>🗺️ Live GPS Guard Tracking</h2><p>Mahali pa guards wote kwa wakati halisi</p></div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input type="text" class="form-input" style="flex:1;min-width:200px;" id="mapSearchInput" placeholder="Tafuta eneo...">
+          <button class="btn btn-gold" onclick="searchMapLocation()">🔍 Tafuta</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="liveMap"></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;border-top:1px solid var(--border);">
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--green);" id="mapOnline">0</div><div style="font-size:11px;color:var(--muted);">Online</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--blue);" id="mapPatrols">0</div><div style="font-size:11px;color:var(--muted);">Doria Hai</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--red);" id="mapEmergency">0</div><div style="font-size:11px;color:var(--muted);">Dharura</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== REPORTS ====== -->
+    <section id="page-reports" class="page">
+      <div class="page-header">
+        <div><h2>📝 Ripoti za Usalama</h2><p>Ripoti zote zilizotumwa na guards</p></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" class="form-input" style="width:200px;padding:7px 12px;" id="reportSearch" placeholder="🔍 Tafuta..." oninput="filterReportsTable()">
+          <button class="btn btn-teal btn-sm" onclick="exportReportsCSV()">📥 CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Tarehe</th><th>Mlinzi</th><th>Kituo</th><th>Aina</th><th>Maelezo</th><th>Angalia</th></tr></thead>
+              <tbody id="reportsTableBody">
+                <tr><td colspan="6"><div class="empty-state"><div class="icon">📝</div><p>Inapakia ripoti...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== ANALYTICS ====== -->
+    <section id="page-analytics" class="page">
+      <div class="page-header"><h2>📈 Analytics</h2><p>Takwimu za mfumo kwa miezi</p></div>
+      <div class="charts-grid">
+        <div class="card"><div class="card-header"><h3>Guards kwa Mwezi</h3></div><div class="card-body"><canvas id="guardsChart" height="200"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Mapato (TZS M)</h3></div><div class="card-body"><canvas id="revenueChart" height="200"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Matukio kwa Wiki</h3></div><div class="card-body"><canvas id="incidentChart" height="200"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3>Gate Entries Leo</h3></div><div class="card-body"><canvas id="gateChart" height="200"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- ====== PAYROLL ====== -->
+    <section id="page-payroll" class="page">
+      <div class="page-header">
+        <div><h2>💼 Payroll & Invoices</h2><p>Simamia malipo ya guards na ankara za wateja</p></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="loadPayroll()">🔄 Refresh</button>
+          <button class="btn btn-teal btn-sm" onclick="openPayrollTab('guards')">💰 Malipo ya Guards</button>
+          <button class="btn btn-gold" onclick="openCreateInvoiceModal()">+ Invoice Mpya</button>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="payroll-summary">
+        <div class="stat-card" style="--accent-c:var(--green)">
+          <div class="label">Mapato ya Mwezi Huu</div>
+          <div class="value" id="payTotal">TZS 0</div>
+          <div class="sub">Kutoka wateja</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--gold)">
+          <div class="label">Invoices Zilipwa</div>
+          <div class="value" id="payPaid">0</div>
+          <div class="sub">Mwezi huu</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--red)">
+          <div class="label">Zinasubiri Malipo</div>
+          <div class="value" id="payPending">0</div>
+          <div class="sub">Overdue au pending</div>
+        </div>
+        <div class="stat-card" style="--accent-c:var(--blue)">
+          <div class="label">Mishahara ya Guards</div>
+          <div class="value" id="payGuardTotal">TZS 0</div>
+          <div class="sub">Jumla ya mwezi</div>
+        </div>
+      </div>
+
+      <!-- Tabs: Invoices | Guard Payroll -->
+      <div style="display:flex;gap:6px;margin-bottom:16px;">
+        <button class="filter-btn active" id="ptab-invoices" onclick="openPayrollTab('invoices',this)">📄 Invoices za Wateja</button>
+        <button class="filter-btn" id="ptab-guards" onclick="openPayrollTab('guards',this)">🛡️ Malipo ya Guards</button>
+      </div>
+
+      <!-- INVOICES TAB -->
+      <div id="payroll-invoices-panel">
+        <div class="card">
+          <div class="card-header">
+            <h3>📄 Invoices za Wateja</h3>
+            <div style="font-size:12px;color:var(--muted);">
+              Invoice = Ankara unayopeleka kwa mteja ili alipe
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Invoice ID</th>
+                    <th>Mteja</th>
+                    <th>Guards</th>
+                    <th>Mwezi</th>
+                    <th>Rate/Siku (TZS)</th>
+                    <th>Siku</th>
+                    <th>Jumla (TZS)</th>
+                    <th>Hali</th>
+                    <th>Vitendo</th>
+                  </tr>
+                </thead>
+                <tbody id="invoiceTableBody">
+                  <tr><td colspan="9"><div class="empty-state"><div class="icon">💼</div><p>Inapakia invoices...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GUARD PAYROLL TAB -->
+      <div id="payroll-guards-panel" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>🛡️ Malipo ya Guards (Mwezi Huu)</h3>
+            <div style="font-size:12px;color:var(--muted);">
+              Payroll = Mshahara unaopaswa kulipa kwa kila guard
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Guard</th>
+                    <th>Kituo</th>
+                    <th>Mteja Anahudumia</th>
+                    <th>Siku Alifanya Kazi</th>
+                    <th>Rate/Siku (TZS)</th>
+                    <th>Jumla (TZS)</th>
+                    <th>Hali ya Malipo</th>
+                    <th>Vitendo</th>
+                  </tr>
+                </thead>
+                <tbody id="guardPayrollBody">
+                  <tr><td colspan="8"><div class="empty-state"><div class="icon">🛡️</div><p>Inapakia...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== SETTINGS ====== -->
+    <section id="page-settings" class="page">
+      <div class="page-header"><h2>⚙️ Mipangilio</h2></div>
+
+      <div class="card">
+        <div class="card-header"><h3>ℹ️ Taarifa za Mfumo</h3></div>
+        <div class="card-body">
+          <p style="color:var(--muted);font-size:13px;">Toleo: AJPLUS Security v2.0 &nbsp;|&nbsp; Firebase Realtime DB &nbsp;|&nbsp; © 2025 AJPLUS Security</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>🔧 Firebase Database Rules</h3>
+          <button class="btn btn-teal btn-sm" onclick="copyRules()">📋 Copy Rules</button>
+        </div>
+        <div class="card-body">
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--blue);">
+            ℹ️ Nenda: <strong>Firebase Console → Realtime Database → Rules</strong> na weka hizi ili mfumo ufanye kazi vizuri bila warnings.
+          </div>
+          <pre id="firebaseRules" style="background:var(--navy);color:#6ee7b7;padding:16px;border-radius:10px;font-size:12px;overflow-x:auto;line-height:1.6;">{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "guards":               { ".indexOn": ["role", "status", "site"] },
+    "clients":              { ".indexOn": ["status", "email"] },
+    "users":                { ".indexOn": ["role", "status"] },
+    "assignments":          { ".indexOn": ["clientId", "guardId", "status", "createdAt"] },
+    "patrol_logs":          { ".indexOn": ["guardId", "site", "timestamp"] },
+    "incidents":            { ".indexOn": ["guardId", "site", "timestamp"] },
+    "gate_entries":         { ".indexOn": ["guardId", "site", "timestamp"] },
+    "vehicle_logs":         { ".indexOn": ["guardId", "site", "timestamp"] },
+    "key_logs":             { ".indexOn": ["guardId", "site", "timestamp"] },
+    "property_passes":      { ".indexOn": ["guardId", "site", "timestamp"] },
+    "liveGuards":           { ".indexOn": ["site", "updatedAt"] },
+    "chats":                { ".indexOn": ["timestamp"] },
+    "panic_alerts":         { ".indexOn": ["timestamp", "seenByAdmin"] },
+    "invoices":             { ".indexOn": ["clientId", "month", "createdAt", "status"] },
+    "payroll":              { ".indexOn": ["status"] },
+    "pending_registrations":{ ".indexOn": ["reviewedByAdmin", "timestamp"] },
+    "reports":              { ".indexOn": ["guardId", "timestamp"] }
+  }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<!-- ===== CREATE INVOICE MODAL ===== -->
+<div class="modal-overlay" id="createInvoiceModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3>📄 Tengeneza Invoice Mpya</h3>
+      <button class="modal-close" onclick="closeModal('createInvoiceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:var(--blue);">
+        ℹ️ Invoice = Ankara unayopeleka kwa mteja ili alipe huduma ya ulinzi. Mfumo utahesabu kiasi moja kwa moja.
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Chagua Mteja *</label>
+          <select class="form-input" id="inv-client">
+            <option value="">— Chagua Mteja —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Mwezi *</label>
+          <input class="form-input" type="month" id="inv-month">
+        </div>
+        <div class="form-group">
+          <label>Idadi ya Guards</label>
+          <input class="form-input" type="number" id="inv-guards" placeholder="1" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label>Rate kwa Siku (TZS) *</label>
+          <input class="form-input" type="number" id="inv-rate" placeholder="mfano: 25000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Siku za Kazi</label>
+          <input class="form-input" type="number" id="inv-days" placeholder="26" min="1" max="31" value="26">
+        </div>
+        <div class="form-group full" id="inv-calc-wrap" style="display:none;">
+          <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px 14px;">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Hesabu ya Kiasi:</div>
+            <div style="font-size:14px;font-weight:700;color:var(--white);" id="inv-calc-text">—</div>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Maelezo (Hiari)</label>
+          <textarea class="form-input" id="inv-notes" style="height:70px;" placeholder="mfano: Huduma ya ulinzi — Januari 2025..."></textarea>
+        </div>
+      </div>
+      <div id="invModalError" style="display:none;margin-top:10px;padding:10px;background:var(--red2);border-left:3px solid var(--red);border-radius:6px;font-size:13px;color:#fca5a5;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('createInvoiceModal')">Funga</button>
+      <button class="btn btn-gold" id="saveInvoiceBtn" onclick="saveInvoice()">💾 Hifadhi Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PANIC OVERLAY ===== -->
+<div class="panic-overlay" id="panicOverlay">
+  <div style="font-size:80px;animation:bounce 0.5s infinite alternate;">🚨</div>
+  <h1 style="font-size:36px;margin:10px 0;font-weight:900;">PANIC ALERT!</h1>
+  <p style="font-size:18px;margin:4px;" id="panicClientTxt">Mteja: —</p>
+  <p style="font-size:18px;margin:4px;" id="panicSiteTxt">Eneo: —</p>
+  <p style="font-size:15px;opacity:0.85;margin:4px;" id="panicTimeTxt">Muda: —</p>
+  <button onclick="dismissPanic()" style="margin-top:24px;padding:14px 36px;font-size:16px;background:white;color:#e83a3a;border:none;border-radius:50px;cursor:pointer;font-weight:900;font-family:'Sora',sans-serif;">✅ NIMEPATA — ZIMA TAHADHARI</button>
+</div>
+
+<!-- ===== CHAT WIDGET ===== -->
+<button class="chat-launcher" id="chatLauncher" onclick="toggleChat()">
+  💬
+  <span class="chat-badge" id="chatBadge">0</span>
+</button>
+
+<div class="chat-window" id="chatWindow">
+  <div class="chat-win-head">
+    <div>
+      <div style="font-weight:700;font-size:14px;">💬 Inbox ya Wateja</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">Mawasiliano ya moja kwa moja</div>
+    </div>
+    <button onclick="toggleChat()" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:7px;width:28px;height:28px;color:var(--muted);cursor:pointer;font-size:14px;">✕</button>
+  </div>
+  <div class="chat-client-list" id="chatClientList">
+    <div style="padding:14px;font-size:12px;color:var(--muted);text-align:center;">Inapakia...</div>
+  </div>
+  <div class="chat-thread-head" id="chatThreadHead">Chagua mteja kuona mazungumzo</div>
+  <div class="chat-msgs" id="chatMessages"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Andika jibu..." onkeydown="if(event.key==='Enter')adminSendReply()">
+    <button class="chat-send" onclick="adminSendReply()">↑</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Emergency sound -->
+<audio id="emergencySound" src="https://assets.mixkit.co/sfx/preview/2967/2967.wav" preload="none"></audio>
+
+<!-- ===== ADD GUARD MODAL ===== -->
+<div class="modal-overlay" id="addGuardModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🛡️ Ongeza Guard Mpya</h3>
+      <button class="modal-close" onclick="closeModal('addGuardModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Jina Kamili *</label><input class="form-input" id="g-name" placeholder="Jina la Guard"></div>
+        <div class="form-group"><label>Email *</label><input class="form-input" type="email" id="g-email" placeholder="guard@ajplus.co.tz"></div>
+        <div class="form-group"><label>Simu</label><input class="form-input" id="g-phone" placeholder="+255 7xx xxx xxx"></div>
+        <div class="form-group"><label>Password ya Awali *</label><input class="form-input" type="password" id="g-pass" placeholder="Min herufi 6"></div>
+        <div class="form-group full"><label>Kituo / Station *</label><input class="form-input" id="g-station" placeholder="Mfano: Mikocheni HQ"></div>
+      </div>
+      <div id="guardModalError" style="display:none;margin-top:12px;padding:10px;background:var(--red2);border-left:3px solid var(--red);border-radius:6px;font-size:13px;color:#fca5a5;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addGuardModal')">Funga</button>
+      <button class="btn btn-gold" id="addGuardBtn" onclick="addGuard()">✅ Hifadhi Guard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD CLIENT MODAL ===== -->
+<div class="modal-overlay" id="addClientModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>👥 Ongeza Mteja Mpya</h3>
+      <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Jina la Mteja *</label><input class="form-input" id="c-name" placeholder="Jina la kampuni au mtu"></div>
+        <div class="form-group"><label>Eneo / Site *</label><input class="form-input" id="c-site" placeholder="Mfano: Kariakoo, Dar es Salaam"></div>
+        <div class="form-group"><label>Simu</label><input class="form-input" id="c-phone" placeholder="+255 7xx xxx xxx"></div>
+        <div class="form-group"><label>Guards Zinazohitajika</label><input class="form-input" type="number" id="c-guards" placeholder="1" min="1"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addClientModal')">Funga</button>
+      <button class="btn btn-gold" onclick="addClient()">✅ Hifadhi Mteja</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ASSIGNMENT MODAL ===== -->
+<div class="modal-overlay" id="assignmentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔗 Assignment Mpya</h3>
+      <button class="modal-close" onclick="closeModal('assignmentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group full"><label>Mteja (Client) *</label>
+          <select class="form-input" id="asgn-client">
+            <option value="">— Chagua Mteja —</option>
+          </select>
+        </div>
+        <div class="form-group" id="asgnClientInfoWrap" style="display:none;grid-column:1/-1;">
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#7dd3fc;" id="asgnClientInfo"></div>
+        </div>
+        <div class="form-group full"><label>Guard wa Kuweka *</label>
+          <select class="form-input" id="asgn-guard">
+            <option value="">— Chagua Guard —</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Supervisor (Hiari)</label>
+          <select class="form-input" id="asgn-sup">
+            <option value="">— Hakuna Supervisor —</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tarehe ya Kuanza</label><input class="form-input" type="date" id="asgn-date"></div>
+        <div class="form-group full"><label>Maelezo / Shift</label><textarea class="form-input" id="asgn-notes" style="height:80px;" placeholder="Mfano: Usiku 18:00-06:00, Geti Kuu..."></textarea></div>
+      </div>
+      <div id="asgnModalError" style="display:none;margin-top:12px;padding:10px;background:var(--red2);border-left:3px solid var(--red);border-radius:6px;font-size:13px;color:#fca5a5;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('assignmentModal')">Funga</button>
+      <button class="btn btn-gold" id="asgnSaveBtn" onclick="saveAssignment()">✅ Hifadhi Assignment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APPROVE CLIENT MODAL ===== -->
+<div class="modal-overlay" id="approveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✅ Idhinisha Mteja</h3>
+      <button class="modal-close" onclick="closeModal('approveModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="approveClientInfo" style="background:rgba(234,191,11,0.06);border:1px solid rgba(234,191,11,0.2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:13px;"></div>
+      <div class="form-group"><label>Weka Guard kwa Mteja Huyu (Hiari)</label>
+        <select class="form-input" id="approve-guard">
+          <option value="">— Weka baadaye kwenye Assignments —</option>
+        </select>
+      </div>
+      <div id="approveModalError" style="display:none;margin-top:12px;padding:10px;background:var(--red2);border-left:3px solid var(--red);border-radius:6px;font-size:13px;color:#fca5a5;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red btn-sm" onclick="rejectClientFromModal()">❌ Kataa</button>
+      <button class="btn btn-ghost" onclick="closeModal('approveModal')">Funga</button>
+      <button class="btn btn-gold" id="approveBtn" onclick="approveClientFromModal()">✅ Idhinisha</button>
+    </div>
   </div>
 </div>
 
 <script src="firebase-config.js"></script>
 <script>
-const ROLE_REDIRECTS = {
-  admin:      'admin.html',
-  guard:      'guard_dashboard.html',
-  supervisor: 'supervisor_dashboard.html',
-  client:     'mteja_dashboard.html',
-  owner:      'owner.html',
-};
+/* ================================================================
+   AJPLUS ADMIN DASHBOARD v2 — TOLEO KAMILI LILILОСAHIHISHWA
+   
+   MAREKEBISHO MAKUU:
+   ✅ secondaryApp — Firebase app ya pili kwa kuunda accounts
+   ✅ addGuard() — inatumia secondaryApp sahihi
+   ✅ loadPendingClients() — fields sahihi (name,site,phone,guardsNeeded)
+   ✅ approveClient() — modal ya kweli (si prompt)
+   ✅ Assignment modal — dropdowns zinafanya kazi vizuri
+   ✅ Panic overlay — CSS imesahihishwa
+   ✅ Chat widget — imetenganishwa vizuri
+   ✅ Auth check — redirect kwa role pekee
+================================================================ */
 
-const MIN_SPLASH_TIME = 2600;
-const startTime = Date.now();
+let db = null;
+let secondaryApp = null;
+let currentUser  = null;
+let liveMap      = null;
+let mapMarkers   = {};
+let searchMarker = null;
+let guardChartInst = null, revenueChartInst = null;
 
-function goTo(url) {
-  const wrap = document.getElementById('splashWrap');
-  wrap.classList.add('leaving');
-  setTimeout(() => { window.location.href = url; }, 420);
-}
+/* --- State --- */
+let allGuardsData   = [];
+let allClientsData  = [];
+let allAsgnData     = [];
+let allReportsData  = [];
+let asgnFilter      = 'all';
 
-function finishSplash(targetUrl) {
-  const elapsed = Date.now() - startTime;
-  const wait = Math.max(0, MIN_SPLASH_TIME - elapsed);
-  setTimeout(() => goTo(targetUrl), wait);
-}
+/* --- Pending approval state --- */
+let approvalClientId   = null;
+let approvalClientData = null;
 
-function setStatus(msg) {
-  const el = document.getElementById('statusText');
-  if (el) el.textContent = msg;
-}
+/* --- Chat state --- */
+let chatThreads   = {};
+let chatListeners = {};
+let activeUid     = null;
+let chatOpen      = false;
 
+/* --- Panic --- */
+let lastPanicKey = null;
+
+/* ================================================================
+   INIT
+================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-  /* Register Service Worker for PWA install support */
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
-
   if (typeof firebase === 'undefined') {
-    setStatus('Tatizo la mfumo — inaelekeza...');
-    finishSplash('Ajplussecurity_login.html');
+    alert('❌ firebase-config.js haikupatikana!\nHakikisha faili ipo kwenye folder moja na admin.html');
     return;
   }
 
-  let db;
-  try { db = firebase.database(); } catch(e) {
-    finishSplash('Ajplussecurity_login.html');
+  try {
+    db = firebase.database();
+  } catch(e) {
+    alert('❌ Tatizo la Firebase Database: ' + e.message + '\nAngalia firebase-config.js yako.');
     return;
+  }
+
+  startClock();
+
+  try {
+    const cfg = firebase.app().options;
+    secondaryApp = firebase.apps.find(a => a.name === 'secondary') ||
+                   firebase.initializeApp(cfg, 'secondary');
+  } catch(e) {
+    console.warn('Secondary app:', e.message);
   }
 
   firebase.auth().onAuthStateChanged(user => {
-    if (!user) {
-      setStatus('Inaelekeza kwenye login...');
-      finishSplash('Ajplussecurity_login.html');
+    if (!user) { window.location.href = 'Ajplussecurity_login.html'; return; }
+    currentUser = user;
+
+    db.ref('users/' + user.uid).once('value').then(snap => {
+      const data = snap.val() || {};
+      if (data.role !== 'admin') {
+        alert('❌ Huna ruhusa ya Admin.\nRole yako: ' + (data.role || 'haijawekwa'));
+        firebase.auth().signOut();
+        window.location.href = 'Ajplussecurity_login.html';
+        return;
+      }
+      document.getElementById('adminNameDisplay').textContent = data.name || user.email;
+      initDashboard();
+    }).catch(err => {
+      alert('❌ Tatizo la kusoma data: ' + err.message + '\n\nAngalia Firebase Database Rules:\n{\".read\": \"auth != null\", \".write\": \"auth != null\"}');
+    });
+  });
+});
+
+
+/* ================================================================
+   THEME TOGGLE — Dark / Light Mode
+================================================================ */
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+  localStorage.setItem('ajplus_theme', isLight ? 'light' : 'dark');
+}
+
+function setupTheme() {
+  const saved = localStorage.getItem('ajplus_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = '🌙';
+  }
+}
+
+function initDashboard() {
+  console.log('[INIT] Dashboard starting...');
+  setupTheme();
+  loadStats();
+  loadRecentActivity();
+  renderGuards();
+  renderClients();
+  loadReports();
+  initCharts();
+  listenPendingBadge();
+  startChatInbox();
+  listenPanicAlerts();
+  loadAssignments(); /* Pre-load assignments ili data iwe tayari */
+  console.log('[INIT] Dashboard started ✅');
+}
+
+/* ================================================================
+   CLOCK
+================================================================ */
+function startClock() {
+  const el = document.getElementById('clockDisplay');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('sw-TZ');
+  }, 1000);
+}
+
+/* ================================================================
+   NAVIGATION
+================================================================ */
+const PAGE_TITLES = {
+  dashboard:   ['Dashboard', 'Muhtasari wa mfumo wote'],
+  guards:      ['Guards', 'Simamia walinzi wote'],
+  clients:     ['Wateja', 'Wateja wa AJPLUS Security'],
+  assignments: ['Assignments', 'Unganisha guards na wateja'],
+  pending:     ['Wateja Wanaongoja', 'Pitia maombi mapya ya usajili'],
+  ob:          ['OB Live Feed', 'Data za muda halisi kutoka guards'],
+  maps:        ['Live GPS', 'Mahali pa guards kwa wakati halisi'],
+  reports:     ['Ripoti', 'Ripoti zote za usalama'],
+  analytics:   ['Analytics', 'Takwimu za mfumo'],
+  payroll:     ['Payroll & Invoices', 'Simamia malipo'],
+  settings:    ['Mipangilio', 'Mipangilio ya mfumo'],
+};
+
+function openPage(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+
+  const page = document.getElementById('page-' + pageId);
+  if (page) { page.classList.add('active'); }
+  if (el)   { el.classList.add('active'); }
+
+  const t = PAGE_TITLES[pageId] || [pageId, ''];
+  document.getElementById('topbarTitle').textContent = t[0];
+  document.getElementById('topbarSub').textContent   = t[1];
+
+  /* Lazy load per page */
+  if (pageId === 'guards')      renderGuardsTable();
+  if (pageId === 'clients')     renderClientsTable();
+  if (pageId === 'reports')     renderReportsTable();
+  if (pageId === 'assignments') loadAssignments();
+  if (pageId === 'pending')     loadPendingClients();
+  if (pageId === 'ob')          loadOBGate();
+  if (pageId === 'maps' && !liveMap) setTimeout(initMap, 300);
+  if (pageId === 'analytics')   setTimeout(updateCharts, 200);
+  if (pageId === 'payroll')     loadPayroll();
+
+  closeSidebarMobile();
+}
+
+/* ================================================================
+   STATS
+================================================================ */
+function loadStats() {
+  if (!db) { console.error('[loadStats] db is null!'); return; }
+  console.log('[loadStats] Starting...');
+
+  db.ref('guards').on('value', snap => {
+    let n = snap.numChildren();
+    let online = 0;
+    allGuardsData = [];
+    snap.forEach(c => {
+      if ((c.val().status||'').toLowerCase() === 'online') online++;
+      allGuardsData.push({ id: c.key, ...c.val() });
+    });
+
+    /* If guards/ node is empty, check users/ for guards */
+    if (n === 0) {
+      db.ref('users').orderByChild('role').equalTo('guard').once('value').then(uSnap => {
+        uSnap.forEach(c => {
+          const d = c.val();
+          if (!allGuardsData.find(g => g.id === c.key)) {
+            allGuardsData.push({ id: c.key, ...d });
+            n++;
+            /* Sync to guards/ node */
+            db.ref('guards/' + c.key).set(d);
+          }
+        });
+        document.getElementById('valGuards').textContent = allGuardsData.length;
+        document.getElementById('valOnline').textContent = allGuardsData.filter(g => (g.status||'').toLowerCase() === 'online').length;
+        renderGuardsTable();
+        console.log('[AJPLUS] Guards (from users fallback):', allGuardsData.length);
+      });
+    } else {
+      document.getElementById('valGuards').textContent = n;
+      document.getElementById('valOnline').textContent = online;
+      renderGuardsTable();
+      console.log('[AJPLUS] Guards loaded:', allGuardsData.length);
+    }
+  });
+
+  db.ref('clients').on('value', snap => {
+    let approved = 0, pending = 0;
+    allClientsData = [];
+    snap.forEach(c => {
+      const d = c.val();
+      const s = (d.status||'').toLowerCase();
+      if (s === 'active' || s === 'approved') approved++;
+      if (s === 'pending') pending++;
+      allClientsData.push({ id: c.key, ...d });
+    });
+
+    /* Also check users/ for clients (role=client) not in clients/ */
+    db.ref('users').orderByChild('role').equalTo('client').once('value').then(uSnap => {
+      uSnap.forEach(c => {
+        if (!allClientsData.find(x => x.id === c.key)) {
+          const d = c.val();
+          const s = (d.status||'').toLowerCase();
+          if (s === 'active' || s === 'approved') approved++;
+          if (s === 'pending') pending++;
+          allClientsData.push({ id: c.key, ...d });
+          /* Sync to clients/ node */
+          db.ref('clients/' + c.key).set(d);
+        }
+      });
+      document.getElementById('valApproved').textContent = approved;
+      document.getElementById('valPending').textContent  = pending;
+      renderClientsTable();
+      console.log('[AJPLUS] Clients total:', allClientsData.length);
+    }).catch(() => {
+      document.getElementById('valApproved').textContent = approved;
+      document.getElementById('valPending').textContent  = pending;
+      renderClientsTable();
+    });
+  });
+
+  /* Listen to 'reports' node (general reports) */
+  db.ref('reports').on('value', snap => {
+    const today = new Date().toDateString();
+    let n = 0;
+    snap.forEach(c => { const t = c.val().timestamp; if (t && new Date(t).toDateString() === today) n++; });
+    document.getElementById('valReports').textContent = n;
+    allReportsData = [];
+    snap.forEach(c => allReportsData.push({ id: c.key, ...c.val() }));
+    /* Always re-render reports table when data changes */
+    renderReportsTable();
+    console.log('[AJPLUS] Reports (general) loaded:', allReportsData.length);
+  });
+
+  /* Also listen to patrol_logs for today's count */
+  db.ref('patrol_logs').on('value', snap => {
+    const today = new Date().toDateString();
+    let extras = [];
+    snap.forEach(siteNode => siteNode.forEach(c => {
+      const d = c.val();
+      if (d.timestamp && new Date(d.timestamp).toDateString() === today) {
+        extras.push({
+          id: c.key,
+          guard: d.guard || d.guardName || '—',
+          site: d.site || d.area || '—',
+          type: 'Doria / Patrol',
+          message: (d.status||'') + (d.notes ? ' — ' + d.notes : ''),
+          timestamp: d.timestamp,
+          _source: 'patrol_logs',
+        });
+      }
+    }));
+    /* Merge patrol logs with reports (avoid duplicates by _source) */
+    allReportsData = allReportsData.filter(r => r._source !== 'patrol_logs');
+    allReportsData = [...allReportsData, ...extras];
+    renderReportsTable();
+  });
+
+  /* Also listen to incidents */
+  db.ref('incidents').on('value', snap => {
+    const today = new Date().toDateString();
+    let extras = [];
+    snap.forEach(siteNode => siteNode.forEach(c => {
+      const d = c.val();
+      if (d.timestamp && new Date(d.timestamp).toDateString() === today) {
+        extras.push({
+          id: c.key,
+          guard: d.guard || '—',
+          site: d.location || d.site || '—',
+          type: '🚨 Tukio — ' + (d.type||''),
+          message: (d.severity||'') + (d.desc ? ': ' + d.desc.slice(0,80) : ''),
+          timestamp: d.timestamp,
+          _source: 'incidents',
+        });
+      }
+    }));
+    allReportsData = allReportsData.filter(r => r._source !== 'incidents');
+    allReportsData = [...allReportsData, ...extras];
+    renderReportsTable();
+  });
+
+  db.ref('emergency').on('value', snap => {
+    const n = snap.numChildren();
+    document.getElementById('valEmergency').textContent = n;
+    document.getElementById('emergencyDot').classList.toggle('show', n > 0);
+    if (n > 0) document.getElementById('emergencySound').play().catch(()=>{});
+  });
+
+  db.ref('revenue').on('value', snap => {
+    const d = snap.val();
+    if (d && d.monthly) document.getElementById('valRevenue').textContent = 'TZS ' + Number(d.monthly).toLocaleString();
+  });
+
+  db.ref('assignments').on('value', snap => {
+    let active = 0;
+    snap.forEach(c => { if ((c.val().status||'') === 'active') active++; });
+    document.getElementById('valAssignments').textContent = active;
+  });
+}
+
+/* ================================================================
+   RECENT ACTIVITY
+================================================================ */
+function loadRecentActivity() {
+  if (!db) return;
+  const tbody = document.getElementById('recentActivityBody');
+
+  /* Combine patrol logs + incidents for dashboard feed */
+  db.ref('patrol_logs').once('value').then(snap => {
+    let rows = [];
+    snap.forEach(siteNode => siteNode.forEach(c => rows.push({ _type:'patrol', ...c.val() })));
+    rows.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    rows = rows.slice(0, 5);
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">📋</div><p>Hakuna shughuli bado.</p></div></td></tr>`;
       return;
     }
 
-    setStatus('Inathibitisha akaunti...');
-
-    db.ref('users/' + user.uid).once('value')
-      .then(snap => {
-        const data   = snap.val() || {};
-        const role   = (data.role   || '').toLowerCase().trim();
-        const status = (data.status || '').toLowerCase().trim();
-
-        if (status === 'pending' || status === 'rejected' || status === 'suspended') {
-          setStatus('Akaunti inahitaji uangalizi...');
-          finishSplash('Ajplussecurity_login.html');
-          return;
-        }
-
-        const target = ROLE_REDIRECTS[role];
-        if (!target) {
-          setStatus('Inaelekeza kwenye login...');
-          finishSplash('Ajplussecurity_login.html');
-          return;
-        }
-
-        setStatus('Karibu tena!');
-        finishSplash(target);
-      })
-      .catch(() => {
-        setStatus('Inaelekeza kwenye login...');
-        finishSplash('Ajplussecurity_login.html');
-      });
+    tbody.innerHTML = rows.map(r => {
+      const t = r.timestamp ? new Date(r.timestamp).toLocaleTimeString('sw-TZ',{hour:'2-digit',minute:'2-digit'}) : '—';
+      const badge = r.status === 'Salama'
+        ? '<span class="badge badge-green">Salama</span>'
+        : '<span class="badge badge-red">Tatizo</span>';
+      return `<tr>
+        <td>${t}</td>
+        <td><span class="badge badge-blue">Doria</span></td>
+        <td>${r.guard||'—'}</td>
+        <td>${r.area||r.site||'—'}</td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join('');
   });
+}
+
+/* ================================================================
+   GUARDS
+================================================================ */
+function renderGuards() { /* triggered by stats listener */ }
+
+function renderGuardsTable(filter = '') {
+  const tbody = document.getElementById('guardsTableBody');
+  if (!tbody) return;
+
+  /* If no data yet and db available, fetch now */
+  if (allGuardsData.length === 0 && db) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>⏳ Inapakia guards...</p></div></td></tr>`;
+    /* Try guards/ node first, then fallback to users/ with role:guard */
+    db.ref('guards').once('value').then(snap => {
+      allGuardsData = [];
+      snap.forEach(c => allGuardsData.push({ id: c.key, ...c.val() }));
+      if (allGuardsData.length === 0) {
+        /* Fallback: check users/ node for guards */
+        return db.ref('users').orderByChild('role').equalTo('guard').once('value').then(uSnap => {
+          uSnap.forEach(c => {
+            const d = c.val();
+            allGuardsData.push({ id: c.key, ...d });
+            /* Also write to guards/ node for future use */
+            db.ref('guards/' + c.key).set(d);
+          });
+          renderGuardsTable(filter);
+        });
+      }
+      renderGuardsTable(filter);
+    });
+    return;
+  }
+
+  let data = allGuardsData;
+  if (filter) {
+    const q = filter.toLowerCase();
+    data = data.filter(g =>
+      (g.name||'').toLowerCase().includes(q) ||
+      (g.station||'').toLowerCase().includes(q) ||
+      (g.email||'').toLowerCase().includes(q)
+    );
+  }
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🛡️</div><p>${filter ? 'Hakuna matokeo.' : 'Hakuna guards bado.'}</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(g => {
+    const isOnline = (g.status||'').toLowerCase() === 'online';
+    const hasAsgn  = g.assignmentId || g.clientId;
+    return `<tr>
+      <td><strong>${g.name||'—'}</strong></td>
+      <td style="font-size:12px;color:var(--muted);">${g.email||'—'}</td>
+      <td>${g.phone||'—'}</td>
+      <td>${g.station||'—'}</td>
+      <td>
+        <span class="badge ${isOnline ? 'badge-green' : 'badge-muted'}">
+          <span class="status-dot ${isOnline ? 'dot-green' : 'dot-muted'}"></span>
+          ${isOnline ? 'Online' : 'Offline'}
+        </span>
+      </td>
+      <td>
+        ${hasAsgn
+          ? `<span class="badge badge-gold">Ana Assignment</span>`
+          : `<span class="badge badge-muted">Hana Assignment</span>`}
+      </td>
+      <td>
+        <button class="btn btn-red btn-sm" onclick="deleteGuard('${g.id}')">🗑 Futa</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterGuardsTable(val) { renderGuardsTable(val); }
+
+function openAddGuardModal() {
+  document.getElementById('g-name').value = '';
+  document.getElementById('g-email').value = '';
+  document.getElementById('g-phone').value = '';
+  document.getElementById('g-pass').value = '';
+  document.getElementById('g-station').value = '';
+  document.getElementById('guardModalError').style.display = 'none';
+  openModal('addGuardModal');
+}
+
+function addGuard() {
+  const name    = document.getElementById('g-name').value.trim();
+  const email   = document.getElementById('g-email').value.trim();
+  const phone   = document.getElementById('g-phone').value.trim();
+  const password= document.getElementById('g-pass').value.trim();
+  const station = document.getElementById('g-station').value.trim();
+
+  const errEl = document.getElementById('guardModalError');
+  errEl.style.display = 'none';
+
+  if (!name)     { showGuardError('Andika jina la guard.'); return; }
+  if (!email)    { showGuardError('Andika email.'); return; }
+  if (!password || password.length < 6) { showGuardError('Password lazima iwe angalau herufi 6.'); return; }
+  if (!station)  { showGuardError('Andika kituo cha kazi.'); return; }
+
+  const btn = document.getElementById('addGuardBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inahifadhi...';
+
+  if (!secondaryApp) {
+    showGuardError('Tatizo la mfumo (secondaryApp). Refresh ukurasa.');
+    btn.disabled = false; btn.textContent = '✅ Hifadhi Guard';
+    return;
+  }
+
+  secondaryApp.auth().createUserWithEmailAndPassword(email, password)
+    .then(cred => {
+      const uid = cred.user.uid;
+      const userData = {
+        uid, name, email, phone, station,
+        role: 'guard', status: 'offline',
+        assignmentStatus: 'available',
+        createdAt: Date.now(),
+        createdBy: currentUser.uid,
+      };
+      return Promise.all([
+        db.ref('users/' + uid).set(userData),
+        db.ref('guards/' + uid).set(userData),
+      ]).then(() => secondaryApp.auth().signOut());
+    })
+    .then(() => {
+      closeModal('addGuardModal');
+      showToast(`✅ Guard "${name}" ameongezwa! Email: ${email}`, 'success');
+      /* Force refresh tables after adding guard */
+      if (db) {
+        db.ref('guards').once('value').then(snap => {
+          allGuardsData = [];
+          snap.forEach(c => allGuardsData.push({ id: c.key, ...c.val() }));
+          renderGuardsTable();
+          document.getElementById('valGuards').textContent = allGuardsData.length;
+        });
+      }
+    })
+    .catch(err => {
+      const msgs = {
+        'auth/email-already-in-use': 'Email hii tayari imetumika.',
+        'auth/invalid-email': 'Email si sahihi.',
+        'auth/weak-password': 'Password ni dhaifu sana.',
+      };
+      showGuardError(msgs[err.code] || err.message);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '✅ Hifadhi Guard';
+    });
+}
+
+function showGuardError(msg) {
+  const el = document.getElementById('guardModalError');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function deleteGuard(id) {
+  if (!confirm('Je, una uhakika unataka kufuta guard huyu?')) return;
+  Promise.all([
+    db.ref('guards/' + id).remove(),
+    db.ref('users/' + id).remove(),
+  ])
+  .then(() => showToast('Guard amefutwa.', 'info'))
+  .catch(() => showToast('Imeshindwa kufuta.', 'error'));
+}
+
+/* ================================================================
+   CLIENTS
+================================================================ */
+function renderClientsTable(filter = '') {
+  const tbody = document.getElementById('clientsTableBody');
+  if (!tbody) return;
+
+  /* If no data yet and db available, fetch now */
+  if (allClientsData.length === 0 && db) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>⏳ Inapakia wateja...</p></div></td></tr>`;
+    db.ref('clients').once('value').then(snap => {
+      allClientsData = [];
+      snap.forEach(c => allClientsData.push({ id: c.key, ...c.val() }));
+      renderClientsTable(filter);
+    });
+    return;
+  }
+
+  let data = allClientsData;
+  if (filter) {
+    const q = filter.toLowerCase();
+    data = data.filter(c =>
+      (c.name||'').toLowerCase().includes(q) ||
+      (c.site||c.location||'').toLowerCase().includes(q)
+    );
+  }
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">👥</div><p>${filter ? 'Hakuna matokeo.' : 'Hakuna wateja bado.'}</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(c => {
+    const status = (c.status||'pending').toLowerCase();
+    const badgeMap = {
+      active:'badge-green', approved:'badge-green',
+      pending:'badge-gold', rejected:'badge-red', suspended:'badge-muted'
+    };
+    const badge = badgeMap[status] || 'badge-muted';
+    const statusLabel = {
+      active:'✅ Hai', approved:'✅ Idhinishwa',
+      pending:'⏳ Pending', rejected:'❌ Imekataliwa', suspended:'⚠️ Imesimamishwa'
+    }[status] || c.status || 'pending';
+    const siteDisplay  = c.site || c.location || c.eneo || '—';
+    const phoneDisplay = c.phone || c.simu || '—';
+    /* Use data-id attribute to avoid quote escaping issues in onclick */
+    return `<tr>
+      <td>
+        <strong>${c.name||'—'}</strong>
+        ${c.custID ? `<br><span style="font-size:10px;color:var(--muted);font-family:monospace;">${c.custID}</span>` : ''}
+      </td>
+      <td>${siteDisplay}</td>
+      <td>${phoneDisplay}</td>
+      <td>${c.guardName
+        ? `<span class="badge badge-blue">🛡️ ${c.guardName}</span>`
+        : '<span style="color:var(--muted);font-size:12px;">Hajawekwa</span>'}</td>
+      <td><span class="badge ${badge}">${statusLabel}</span></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${status === 'pending' ? `<button class="btn btn-teal btn-sm" data-id="${c.id}" onclick="activateClient(this.dataset.id)">✅ Weka Active</button>` : ''}
+        <button class="btn btn-blue btn-sm" data-id="${c.id}" onclick="quickAssignGuard(this.dataset.id, this.dataset.name)" data-name="${(c.name||'').replace(/"/g,'&quot;')}">🔗 Guard</button>
+        <button class="btn btn-ghost btn-sm" data-id="${c.id}" onclick="editClient(this.dataset.id)">✏️</button>
+        <button class="btn btn-red btn-sm" data-id="${c.id}" onclick="deleteClient(this.dataset.id)">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterClientsTable(val) { renderClientsTable(val); }
+
+function openAddClientModal() {
+  document.getElementById('c-name').value = '';
+  document.getElementById('c-site').value = '';
+  document.getElementById('c-phone').value = '';
+  document.getElementById('c-guards').value = '1';
+  openModal('addClientModal');
+}
+
+function addClient() {
+  const name   = document.getElementById('c-name').value.trim();
+  const site   = document.getElementById('c-site').value.trim();
+  const phone  = document.getElementById('c-phone').value.trim();
+  const guards = document.getElementById('c-guards').value || '1';
+  if (!name || !site) { showToast('Jaza jina na eneo!', 'error'); return; }
+
+  /* Admin anaongeza client moja kwa moja → status:'active' moja kwa moja */
+  /* Client anayejiandikisha → status:'pending' (inahitaji idhini) */
+  const clientData = {
+    name, site, phone,
+    guardsNeeded: parseInt(guards),
+    status: 'active',   /* ← Admin-added = active moja kwa moja */
+    approvedAt: Date.now(),
+    approvedBy: currentUser.uid,
+    createdBy: currentUser.uid,
+    timestamp: Date.now(),
+  };
+
+  db.ref('clients').push(clientData)
+  .then((ref) => {
+    closeModal('addClientModal');
+    showToast(`✅ Mteja "${name}" ameongezwa kama ACTIVE!`, 'success');
+  })
+  .catch(err => showToast('Imeshindwa kuongeza: ' + err.message, 'error'));
+}
+
+function editClient(id) {
+  const c = allClientsData.find(x => x.id === id); if (!c) return;
+  const newName  = prompt('Jina jipya:', c.name||'');        if (newName === null) return;
+  const newSite  = prompt('Eneo jipya:', c.site||c.location||c.eneo||''); if (newSite === null) return;
+  const newPhone = prompt('Simu mpya:', c.phone||c.simu||''); if (newPhone === null) return;
+
+  const updates = {
+    name:  newName.trim()  || c.name,
+    site:  newSite.trim()  || c.site || '',
+    phone: newPhone.trim() || c.phone || '',
+    eneo:  newSite.trim()  || c.site || '',
+  };
+  /* Also activate if pending */
+  if ((c.status||'pending') === 'pending') {
+    if (confirm(`Mteja "${c.name}" ana hali: PENDING.
+Badilisha kuwa ACTIVE?`)) {
+      updates.status = 'active';
+      updates.approvedAt = Date.now();
+      updates.approvedBy = currentUser?.uid || 'admin';
+      /* Update users/ node too */
+      db.ref('users/' + id).update({ ...updates });
+    }
+  }
+
+  db.ref('clients/' + id).update(updates)
+    .then(() => showToast('✅ Mteja amesasishwa!', 'success'))
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+/* Quick activate client from pending to active */
+function activateClient(id) {
+  if (!confirm('Weka mteja huyu kama ACTIVE?')) return;
+  const updates = {
+    status: 'active',
+    approvedAt: Date.now(),
+    approvedBy: currentUser?.uid || 'admin',
+  };
+  Promise.all([
+    db.ref('clients/' + id).update(updates),
+    db.ref('users/' + id).update(updates),
+  ]).then(() => showToast('✅ Mteja amewekwa kama Active!', 'success'))
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+function deleteClient(id) {
+  if (!confirm('Je, una uhakika unataka kufuta mteja huyu?')) return;
+  db.ref('clients/' + id).remove()
+    .then(() => showToast('Mteja amefutwa.', 'info'))
+    .catch(() => showToast('Imeshindwa kufuta.', 'error'));
+}
+
+/* ================================================================
+   PENDING CLIENTS
+================================================================ */
+function listenPendingBadge() {
+  if (!db) return;
+
+  /* Sikiliza nodes MBILI kwa wakati mmoja */
+  let countClients = 0, countRegs = 0;
+
+  const updateBadge = () => {
+    const n = countClients + countRegs;
+    const badge = document.getElementById('pendingBadge');
+    if (badge) { badge.textContent = n; badge.classList.toggle('show', n > 0); }
+    const alertWrap = document.getElementById('dashboardAlerts');
+    if (alertWrap) {
+      alertWrap.innerHTML = n > 0
+        ? `<div class="alert-banner warning">
+            <span>⏳ Kuna wateja <strong>${n}</strong> wanaongoja idhini yako!</span>
+            <button class="btn btn-gold btn-sm" onclick="openPage('pending',document.querySelector('[onclick*=pending]'))">Angalia →</button>
+          </div>`
+        : '';
+    }
+  };
+
+  /* 1. Clients node */
+  db.ref('clients').orderByChild('status').equalTo('pending').on('value', snap => {
+    countClients = snap.numChildren();
+    updateBadge();
+  });
+
+  /* 2. Pending registrations node (kutoka client-register.html) */
+  db.ref('pending_registrations').orderByChild('reviewedByAdmin').equalTo(false).on('value', snap => {
+    countRegs = snap.numChildren();
+    updateBadge();
+  });
+}
+
+function loadPendingClients() {
+  if (!db) return;
+  const tbody = document.getElementById('pendingTableBody');
+  tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  Promise.all([
+    db.ref('clients').orderByChild('status').equalTo('pending').once('value'),
+    db.ref('pending_registrations').orderByChild('reviewedByAdmin').equalTo(false).once('value'),
+  ]).then(([clientsSnap, regSnap]) => {
+
+    const rows = [];
+
+    clientsSnap.forEach(c => {
+      const d = c.val();
+      rows.push({
+        id: c.key, _source: 'clients',
+        name: d.name||'—',
+        bizName: d.bizName||d.company||'—',
+        site: d.site||d.location||'—',
+        phone: d.phone||d.simu||'—',
+        guardsNeeded: d.guardsNeeded||d.walinzi||'1',
+        timestamp: d.timestamp||0,
+        ...d,
+      });
+    });
+
+    regSnap.forEach(c => {
+      const d = c.val();
+      if (!rows.find(r => r.id === c.key)) {
+        rows.push({
+          id: c.key, _source: 'pending_registrations',
+          name: d.name||d.bizName||'—',
+          bizName: d.bizName||d.company||'—',
+          site: d.location||d.site||'—',
+          phone: d.phone||d.simu||'—',
+          guardsNeeded: d.guardsNeeded||d.walinzi||'1',
+          timestamp: d.createdAt||d.timestamp||0,
+          ...d,
+        });
+      }
+    });
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">✅</div><p>Hakuna wateja wanaongoja idhini.</p></div></td></tr>`;
+      document.getElementById('pendingAlertBanner').innerHTML = '';
+      return;
+    }
+
+    rows.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    document.getElementById('pendingAlertBanner').innerHTML =
+      `<div class="alert-banner warning">⏳ Wateja <strong>${rows.length}</strong> wanasubiri idhini yako.</div>`;
+
+    tbody.innerHTML = rows.map(c => {
+      const date = c.timestamp ? new Date(c.timestamp).toLocaleDateString('sw-TZ') : '—';
+      const safeName = (c.name||'').replace(/'/g,"\'").replace(/"/g,'&quot;');
+      const sourceTag = c._source === 'pending_registrations'
+        ? `<span class="badge badge-blue" style="font-size:9px;margin-left:4px;">Reg</span>` : '';
+      return `<tr>
+        <td>${date}</td>
+        <td><strong>${c.name||'—'}</strong></td>
+        <td>${c.bizName||'—'}</td>
+        <td>${c.site||'—'}</td>
+        <td>${c.phone||'—'}</td>
+        <td>${c.guardsNeeded||'1'}</td>
+        <td><span class="badge badge-gold">Pending</span>${sourceTag}</td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn btn-teal btn-sm" onclick="openApproveModal('${c.id}')">✅ Idhinisha</button>
+          <button class="btn btn-red btn-sm" onclick="rejectClient('${c.id}','${safeName}')">❌ Kataa</button>
+        </td>
+      </tr>`;
+    }).join('');
+  })
+  .catch(err => {
+    console.error('loadPendingClients error:', err);
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">❌</div><p>Kosa: ${err.message}</p></div></td></tr>`;
+  });
+}
+
+function openApproveModal(clientId) {
+  const c = allClientsData.find(x => x.id === clientId);
+  if (!c) {
+    /* Fetch fresh */
+    db.ref('clients/' + clientId).once('value').then(snap => {
+      const data = snap.val(); if (!data) return;
+      approvalClientId   = clientId;
+      approvalClientData = { id: clientId, ...data };
+      _showApproveModal();
+    });
+    return;
+  }
+  approvalClientId   = clientId;
+  approvalClientData = c;
+  _showApproveModal();
+}
+
+function _showApproveModal() {
+  const c = approvalClientData;
+  document.getElementById('approveClientInfo').innerHTML = `
+    <div style="font-weight:700;font-size:14px;color:var(--gold);margin-bottom:8px;">${c.name||'—'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
+      <div>📍 <strong>Eneo:</strong> ${c.site||c.location||'—'}</div>
+      <div>📞 <strong>Simu:</strong> ${c.phone||c.simu||'—'}</div>
+      <div>🛡️ <strong>Guards:</strong> ${c.guardsNeeded||c.walinzi||'1'}</div>
+      <div>📅 <strong>Tarehe:</strong> ${c.timestamp ? new Date(c.timestamp).toLocaleDateString('sw-TZ') : '—'}</div>
+    </div>`;
+
+  /* Populate available guards */
+  const sel = document.getElementById('approve-guard');
+  sel.innerHTML = '<option value="">— Weka baadaye kwenye Assignments —</option>';
+  const available = allGuardsData.filter(g =>
+    (g.assignmentStatus||'available') === 'available' && !g.clientId
+  );
+  available.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = `${g.name} — ${g.station||''}`;
+    sel.appendChild(opt);
+  });
+
+  document.getElementById('approveModalError').style.display = 'none';
+  openModal('approveModal');
+}
+
+function approveClientFromModal() {
+  if (!approvalClientId || !approvalClientData) return;
+  const guardId = document.getElementById('approve-guard').value;
+  const btn = document.getElementById('approveBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inaidhinisha...';
+
+  const updates = {};
+  /* Update client status - ensure all required fields exist */
+  updates[`clients/${approvalClientId}/status`]        = 'active';
+  updates[`clients/${approvalClientId}/approvedAt`]    = Date.now();
+  updates[`clients/${approvalClientId}/approvedBy`]    = currentUser.uid;
+  /* Copy profile data from pending_registrations if name/site missing in clients/ */
+  if (approvalClientData) {
+    if (!approvalClientData.site && approvalClientData.eneo) {
+      updates[`clients/${approvalClientId}/site`] = approvalClientData.eneo;
+    }
+    if (!approvalClientData.name && approvalClientData.jina) {
+      updates[`clients/${approvalClientId}/name`] = approvalClientData.jina;
+    }
+    if (!approvalClientData.phone && approvalClientData.simu) {
+      updates[`clients/${approvalClientId}/phone`] = approvalClientData.simu;
+    }
+  }
+
+  /* Also update users node if exists */
+  updates[`users/${approvalClientId}/status`]     = 'active';
+  updates[`users/${approvalClientId}/approvedAt`] = Date.now();
+
+  /* Mark as reviewed in pending_registrations (kama alitoka hapo) */
+  updates[`pending_registrations/${approvalClientId}/status`]          = 'active';
+  updates[`pending_registrations/${approvalClientId}/reviewedByAdmin`] = true;
+  updates[`pending_registrations/${approvalClientId}/reviewedAt`]      = Date.now();
+
+  /* Welcome message */
+  updates[`chats/${approvalClientId}/${Date.now()}`] = {
+    sender: 'admin', senderName: 'AJPLUS Admin', senderRole: 'admin',
+    text: `🎉 Karibu ${approvalClientData.name}! Akaunti yako imeidhinishwa. Tutakupigia simu hivi karibuni kukusanidi mlinzi wako.`,
+    timestamp: Date.now(),
+  };
+
+  if (guardId) {
+    const guard = allGuardsData.find(g => g.id === guardId);
+    const asgnRef = db.ref('assignments').push().key;
+    updates[`assignments/${asgnRef}`] = {
+      clientId: approvalClientId,
+      clientName: approvalClientData.name,
+      clientSite: approvalClientData.site || approvalClientData.location || '',
+      guardId,
+      guardName: guard ? guard.name : guardId,
+      status: 'active',
+      createdAt: Date.now(),
+      createdBy: currentUser.uid,
+    };
+    updates[`guards/${guardId}/assignmentId`]     = asgnRef;
+    updates[`guards/${guardId}/clientId`]         = approvalClientId;
+    updates[`guards/${guardId}/clientName`]       = approvalClientData.name;
+    updates[`guards/${guardId}/assignmentStatus`] = 'assigned';
+    updates[`clients/${approvalClientId}/guardId`]   = guardId;
+    updates[`clients/${approvalClientId}/guardName`] = guard ? guard.name : guardId;
+    updates[`users/${guardId}/currentAssignment`] = {
+      assignmentId: asgnRef,
+      clientId: approvalClientId,
+      clientName: approvalClientData.name,
+      clientSite: approvalClientData.site || '',
+    };
+    updates[`users/${approvalClientId}/currentGuard`] = {
+      assignmentId: asgnRef,
+      guardId,
+      guardName: guard ? guard.name : guardId,
+      clientSite: approvalClientData.site || '',
+    };
+  }
+
+  db.ref().update(updates)
+    .then(() => {
+      closeModal('approveModal');
+      showToast(`✅ ${approvalClientData.name} ameidhinishwa${guardId ? ' na kupewa guard!' : '!'}`, 'success');
+      loadPendingClients();
+      approvalClientId = null; approvalClientData = null;
+    })
+    .catch(err => {
+      const el = document.getElementById('approveModalError');
+      el.textContent = '⚠️ Imeshindwa: ' + err.message;
+      el.style.display = 'block';
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = '✅ Idhinisha'; });
+}
+
+function rejectClientFromModal() {
+  if (!approvalClientData) return;
+  const reason = prompt(`Sababu ya kukataa ombi la ${approvalClientData.name}:\n(Itumwa kwa mteja)`);
+  if (reason === null) return;
+  rejectClient(approvalClientId, approvalClientData.name, reason);
+  closeModal('approveModal');
+}
+
+function rejectClient(id, name, reason) {
+  const r = reason || prompt(`Sababu ya kukataa ombi la ${name}:`);
+  if (r === null) return;
+  const updates = {};
+  updates[`clients/${id}/status`]     = 'rejected';
+  updates[`users/${id}/status`]       = 'rejected';
+  if (r) {
+    updates[`chats/${id}/${Date.now()}`] = {
+      sender: 'admin', senderName: 'AJPLUS Admin', senderRole: 'admin',
+      text: `Habari ${name}. Ombi lako halikuidhinishwa. Sababu: "${r}". Wasiliana nasi kwa maelezo zaidi.`,
+      timestamp: Date.now(),
+    };
+  }
+  db.ref().update(updates)
+    .then(() => { showToast(`Ombi la ${name} limekataliwa.`, 'info'); loadPendingClients(); })
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+/* ================================================================
+   ASSIGNMENTS
+================================================================ */
+let asgnListener = null;
+function loadAssignments() {
+  if (!db) return;
+  const tbody = document.getElementById('assignmentTableBody');
+  tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  /* Ondoa listener ya zamani kama ipo */
+  if (asgnListener) { db.ref('assignments').off('value', asgnListener); }
+
+  asgnListener = db.ref('assignments').orderByChild('createdAt').on('value', snap => {
+    allAsgnData = [];
+    snap.forEach(c => {
+      const d = c.val();
+      /* Normalize status — baadhi ya assignments zamani hazina status field */
+      if (!d.status) d.status = 'active';
+      allAsgnData.push({ id: c.key, ...d });
+    });
+    allAsgnData.reverse();
+    updateAsgnStats();
+    renderAsgnTable();
+  }, err => {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
+  });
+}
+
+function updateAsgnStats() {
+  const active  = allAsgnData.filter(a => a.status === 'active').length;
+  const pending = allAsgnData.filter(a => a.status === 'pending').length;
+  const guards  = new Set(allAsgnData.filter(a => a.guardId).map(a => a.guardId)).size;
+  const clients = new Set(allAsgnData.filter(a => a.clientId).map(a => a.clientId)).size;
+  document.getElementById('asgnActive').textContent  = active;
+  document.getElementById('asgnPending').textContent = pending;
+  document.getElementById('asgnGuards').textContent  = guards;
+  document.getElementById('asgnClients').textContent = clients;
+}
+
+function filterAsgn(f, btn) {
+  asgnFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAsgnTable();
+}
+
+function renderAsgnTable() {
+  const tbody = document.getElementById('assignmentTableBody');
+  const data  = asgnFilter === 'all' ? allAsgnData : allAsgnData.filter(a => a.status === asgnFilter);
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔗</div><p>Hakuna assignments${asgnFilter !== 'all' ? ' za "'+asgnFilter+'"':''} bado.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(a => {
+    const sc = a.status === 'active' ? 'badge-green' : a.status === 'pending' ? 'badge-gold' : 'badge-muted';
+    const sl = a.status === 'active' ? '🟢 Hai' : a.status === 'pending' ? '🟡 Pending' : '⚫ Iliisha';
+    const date = a.startDate || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('sw-TZ') : '—');
+    return `<tr>
+      <td><strong>${a.clientName||'—'}</strong></td>
+      <td>${a.clientSite||'—'}</td>
+      <td>${a.guardName ? `<strong>${a.guardName}</strong>` : '<span style="color:var(--muted);font-size:12px;">⚠️ Hajawekwa</span>'}</td>
+      <td>${a.supervisorName||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;">${date}</td>
+      <td><span class="badge ${sc}">${sl}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-blue btn-sm" onclick="editAsgn('${a.id}')">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="endAsgn('${a.id}')">🔚</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openNewAssignmentModal() {
+  document.getElementById('asgn-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('asgn-notes').value = '';
+  document.getElementById('asgnModalError').style.display = 'none';
+
+  /* Populate clients */
+  const cSel = document.getElementById('asgn-client');
+  cSel.innerHTML = '<option value="">— Chagua Mteja —</option>';
+  allClientsData.filter(c => !['rejected','suspended'].includes((c.status||'').toLowerCase()) && c.name).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    opt.dataset.site = c.site||c.location||'';
+    opt.dataset.phone = c.phone||'';
+    cSel.appendChild(opt);
+  });
+
+  cSel.onchange = () => {
+    const opt = cSel.options[cSel.selectedIndex];
+    const info = document.getElementById('asgnClientInfoWrap');
+    if (opt.value && opt.dataset.site) {
+      document.getElementById('asgnClientInfo').textContent = `📍 ${opt.dataset.site}${opt.dataset.phone ? ' | 📞 '+opt.dataset.phone : ''}`;
+      info.style.display = 'block';
+    } else { info.style.display = 'none'; }
+  };
+
+  /* Populate guards */
+  const gSel = document.getElementById('asgn-guard');
+  gSel.innerHTML = '<option value="">— Chagua Guard —</option>';
+
+  /* Panga guards: available kwanza, kisha assigned */
+  const sortedGuards = [...allGuardsData].sort((a, b) => {
+    const aAvail = (a.assignmentStatus||'available') === 'available' ? 0 : 1;
+    const bAvail = (b.assignmentStatus||'available') === 'available' ? 0 : 1;
+    return aAvail - bAvail;
+  });
+
+  if (sortedGuards.length === 0) {
+    /* Fallback: reload guards moja kwa moja kutoka Firebase */
+    db.ref('guards').once('value').then(snap => {
+      snap.forEach(c => {
+        const g = { id: c.key, ...c.val() };
+        if (!allGuardsData.find(x => x.id === g.id)) allGuardsData.push(g);
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        const assigned = (g.assignmentStatus||'available') !== 'available';
+        opt.textContent = `${assigned ? '⚠️ ' : '✅ '}${g.name||g.id}${g.station ? ' — '+g.station : ''}${assigned ? ' (Amekabidhiwa)' : ''}`;
+        opt.disabled = false; /* Ruhusu kuchagua hata assigned — admin anaweza kubadilisha */
+        gSel.appendChild(opt);
+      });
+      if (gSel.options.length === 1) {
+        db.ref('users').orderByChild('role').equalTo('guard').once('value').then(usnap => {
+          usnap.forEach(c => {
+            const g = { id: c.key, ...c.val() };
+            const opt = document.createElement('option');
+            opt.value = g.id;
+            opt.textContent = `✅ ${g.name||g.email||g.id}`;
+            gSel.appendChild(opt);
+          });
+        });
+      }
+    });
+  } else {
+    sortedGuards.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      const assigned = (g.assignmentStatus||'available') !== 'available';
+      opt.textContent = `${assigned ? '⚠️ ' : '✅ '}${g.name||g.id}${g.station ? ' — '+g.station : ''}${assigned ? ' (Amekabidhiwa)' : ''}`;
+      gSel.appendChild(opt);
+    });
+  }
+
+  /* Populate supervisors */
+  const sSel = document.getElementById('asgn-sup');
+  sSel.innerHTML = '<option value="">— Hakuna Supervisor —</option>';
+  db.ref('users').orderByChild('role').equalTo('supervisor').once('value').then(snap => {
+    snap.forEach(c => {
+      const u = c.val();
+      const opt = document.createElement('option');
+      opt.value = c.key;
+      opt.textContent = u.name || u.email || c.key;
+      sSel.appendChild(opt);
+    });
+  });
+
+  openModal('assignmentModal');
+}
+
+function saveAssignment() {
+  const cSel = document.getElementById('asgn-client');
+  const gSel = document.getElementById('asgn-guard');
+  const sSel = document.getElementById('asgn-sup');
+  const date  = document.getElementById('asgn-date').value;
+  const notes = document.getElementById('asgn-notes').value.trim();
+  const cId   = cSel.value;
+  const gId   = gSel.value;
+
+  if (!cId) { showAsgnError('Chagua mteja kwanza!'); return; }
+  if (!gId) { showAsgnError('Chagua guard wa kuweka!'); return; }
+
+  const conflict = allAsgnData.find(a => a.guardId === gId && a.status === 'active');
+  if (conflict) { showAsgnError(`Guard huyu ana assignment inayoendelea kwa "${conflict.clientName}".`); return; }
+
+  const btn = document.getElementById('asgnSaveBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inahifadhi...';
+
+  const cOpt = cSel.options[cSel.selectedIndex];
+  const gOpt = gSel.options[gSel.selectedIndex];
+  const sVal = sSel.value;
+  const sOpt = sVal ? sSel.options[sSel.selectedIndex] : null;
+
+  const asgnData = {
+    clientId: cId, clientName: cOpt.text, clientSite: cOpt.dataset?.site||'',
+    guardId:  gId, guardName:  gOpt.text.split(' — ')[0],
+    supervisorId: sVal||null, supervisorName: sVal ? (sOpt?.text||null) : null,
+    status: 'active', startDate: date||new Date().toISOString().slice(0,10),
+    notes, createdAt: Date.now(), createdBy: currentUser.uid,
+  };
+
+  db.ref('assignments').push(asgnData).then(ref => {
+    const up = {};
+    up[`guards/${gId}/assignmentId`]     = ref.key;
+    up[`guards/${gId}/clientId`]         = cId;
+    up[`guards/${gId}/clientName`]       = asgnData.clientName;
+    up[`guards/${gId}/assignmentStatus`] = 'assigned';
+    up[`clients/${cId}/guardId`]         = gId;
+    up[`clients/${cId}/guardName`]       = asgnData.guardName;
+    up[`users/${gId}/currentAssignment`] = { assignmentId: ref.key, clientId: cId, clientName: asgnData.clientName, clientSite: asgnData.clientSite };
+    up[`users/${cId}/currentGuard`]      = { assignmentId: ref.key, guardId: gId, guardName: asgnData.guardName, clientSite: asgnData.clientSite };
+    return db.ref().update(up);
+  })
+  .then(() => {
+    closeModal('assignmentModal');
+    showToast('✅ Assignment imehifadhiwa! Guard na Mteja wameunganishwa.', 'success');
+    loadAssignments();
+  })
+  .catch(err => showAsgnError('Imeshindwa: ' + err.message))
+  .finally(() => { btn.disabled = false; btn.textContent = '✅ Hifadhi Assignment'; });
+}
+
+function showAsgnError(msg) {
+  const el = document.getElementById('asgnModalError');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function editAsgn(id) {
+  const a = allAsgnData.find(x => x.id === id); if (!a) return;
+  const map = {'1':'active','2':'pending','3':'ended'};
+  const choice = prompt(`Badilisha hali:\n1 = active\n2 = pending\n3 = ended\n\nHali sasa: ${a.status}`,'1');
+  const newStatus = map[choice]; if (!newStatus) return;
+  db.ref('assignments/' + id).update({ status: newStatus })
+    .then(() => { showToast('Assignment imesasishwa.', 'success'); loadAssignments(); })
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+function endAsgn(id) {
+  const a = allAsgnData.find(x => x.id === id); if (!a) return;
+  if (!confirm(`Maliza assignment: ${a.clientName} ← ${a.guardName}?`)) return;
+  const up = {};
+  up[`assignments/${id}/status`]  = 'ended';
+  up[`assignments/${id}/endedAt`] = Date.now();
+  if (a.guardId) {
+    up[`guards/${a.guardId}/assignmentId`]     = null;
+    up[`guards/${a.guardId}/clientId`]         = null;
+    up[`guards/${a.guardId}/assignmentStatus`] = 'available';
+    up[`users/${a.guardId}/currentAssignment`] = null;
+  }
+  if (a.clientId) {
+    up[`clients/${a.clientId}/guardId`]   = null;
+    up[`clients/${a.clientId}/guardName`] = null;
+    up[`users/${a.clientId}/currentGuard`] = null;
+  }
+  db.ref().update(up)
+    .then(() => { showToast('Assignment imemalizwa.', 'info'); loadAssignments(); })
+    .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+/* ================================================================
+   OB FEED
+================================================================ */
+let currentOBTab = 'gate';
+
+function switchOB(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById('ob-' + tab);
+  if (panel) panel.classList.add('active');
+  currentOBTab = tab;
+  loadCurrentOBTab();
+}
+
+function loadCurrentOBTab() {
+  const loaders = {
+    gate: loadOBGate, patrol: loadOBPatrol, incidents: loadOBIncidents,
+    vehicles: loadOBVehicles, keys: loadOBKeys, property: loadOBProperty,
+    glive: loadOBGuardsLive,
+  };
+  if (loaders[currentOBTab]) loaders[currentOBTab]();
+}
+
+function obGPS(lat, lng) {
+  if (!lat || !lng) return '<span style="color:var(--muted);font-size:11px;">—</span>';
+  return `<a class="ob-gps-link" href="https://maps.google.com/?q=${lat},${lng}" target="_blank">📍 ${parseFloat(lat).toFixed(4)},${parseFloat(lng).toFixed(4)}</a>`;
+}
+function obPhoto(url) {
+  if (!url) return '—';
+  return `<img class="ob-photo" src="${url}" onclick="window.open('${url}','_blank')" alt="Picha">`;
+}
+
+function loadOBGate() {
+  if (!db) return;
+  const tbody = document.getElementById('ob-gate-body');
+  tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  db.ref('gate_entries').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(r => {
+      const sc = r.status==='Inside' ? 'badge-green' : 'badge-muted';
+      tbody.innerHTML += `<tr><td><strong>${r.name||'—'}</strong></td><td>${r.idNumber||'—'}</td><td>${r.purpose||'—'}</td><td>${r.plate||'—'}</td><td>${r.timeIn||'—'}</td><td>${r.timeOut||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><span class="badge ${sc}">${r.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td><td>${r.guard||'—'}</td></tr>`;
+    });
+  });
+}
+
+function loadOBPatrol() {
+  if (!db) return;
+  const tbody = document.getElementById('ob-patrol-body');
+  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  db.ref('patrol_logs').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(r => {
+      const sc = r.status==='Salama' ? 'badge-green' : r.status?.includes('Tatizo') ? 'badge-red' : 'badge-gold';
+      tbody.innerHTML += `<tr><td>${r.time||'—'}<br><small style="color:var(--muted);font-size:10px;">${r.timestamp?new Date(r.timestamp).toLocaleDateString('sw-TZ'):''}</small></td><td><strong>${r.guard||'—'}</strong></td><td>${r.site||'—'}</td><td>${r.area||'—'}</td><td><span class="badge ${sc}">${r.status||'—'}</span></td><td>${r.weather||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.notes||'—'}</td></tr>`;
+    });
+  });
+}
+
+function loadOBIncidents() {
+  if (!db) return;
+  const tbody = document.getElementById('ob-incidents-body');
+  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  db.ref('incidents').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">✅</div><p>Hakuna matukio.</p></div></td></tr>`; return; }
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push({k:c.key,sid:siteNode.key,...c.val()}))); rows.reverse().forEach(r => {
+      const isCrit = r.severity?.includes('Critical')||r.severity?.includes('Major');
+      const sc = isCrit ? 'badge-red' : r.severity?.includes('Moderate') ? 'badge-gold' : 'badge-muted';
+      tbody.innerHTML += `<tr><td>${r.date||'—'} ${r.time||''}</td><td>${r.location||'—'}</td><td>${r.type||'—'}</td><td><span class="badge ${sc}">${r.severity||'—'}</span></td><td><strong>${r.guard||'—'}</strong></td><td>${r.police||'Hapana'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><button class="btn btn-blue btn-sm" onclick="viewIncident('${r.sid}','${r.k}')">👁</button></td></tr>`;
+    });
+  });
+}
+
+function viewIncident(siteId, key) {
+  db.ref('incidents/' + siteId + '/' + key).once('value').then(snap => {
+    const r = snap.val(); if (!r) return;
+    alert(`🚨 TUKIO\n\n📅 ${r.date||''} ${r.time||''}\n📍 ${r.location||''}\n🔴 ${r.type||''}\n⚠️ ${r.severity||''}\n👮 Polisi: ${r.police||'Hapana'}\n\n💬 ${r.desc||''}\n\n✅ Hatua: ${r.action||'—'}\n\n🛡️ Mlinzi: ${r.guard||''}`);
+  });
+}
+
+function loadOBVehicles() {
+  if (!db) return;
+  const tbody = document.getElementById('ob-vehicles-body');
+  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  db.ref('vehicle_logs').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna magari.</p></div></td></tr>`; return; }
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(v => {
+      const sc = v.status==='Inside' ? 'badge-green' : 'badge-muted';
+      tbody.innerHTML += `<tr><td><strong>${v.plate||'—'}</strong></td><td>${v.driver||'—'}</td><td>${v.cargo||'—'}</td><td>${v.timeIn||'—'}</td><td>${v.timeOut||'—'}</td><td>${v.auth||'—'}</td><td>${obGPS(v.lat,v.lng)}</td><td>${obPhoto(v.photoURL)}</td><td><span class="badge ${sc}">${v.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td></tr>`;
+    });
+  });
+}
+
+function loadOBKeys() {
+  if (!db) return;
+  const tbody  = document.getElementById('ob-keys-body');
+  const alertEl = document.getElementById('keysAlertBox');
+  tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  db.ref('key_logs').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; alertEl.style.display='none'; return; }
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse();
+    const out = rows.filter(r => r.action==='Imetolewa' && !r.timeIn);
+    if (out.length > 0) {
+      alertEl.style.display = 'block';
+      alertEl.textContent = `⚠️ Funguo ${out.length} hazijarudishwa: ${out.map(r=>r.keyName).join(', ')}`;
+    } else { alertEl.style.display = 'none'; }
+    rows.forEach(k => {
+      const sc = k.action==='Imetolewa' ? 'badge-gold' : 'badge-green';
+      tbody.innerHTML += `<tr><td><strong>${k.keyName||'—'}</strong></td><td>${k.recipient||'—'}</td><td>${k.timeOut||'—'}</td><td>${k.timeIn||'—'}</td><td><span class="badge ${sc}">${k.action||'—'}</span></td><td>${obGPS(k.lat,k.lng)}</td><td>${k.guard||'—'}</td></tr>`;
+    });
+  });
+}
+
+function loadOBProperty() {
+  if (!db) return;
+  const tbody = document.getElementById('ob-property-body');
+  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  db.ref('property_passes').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(p => {
+      tbody.innerHTML += `<tr><td><strong>${p.item||'—'}</strong></td><td>${p.qty||'—'}</td><td>${p.carrier||'—'}</td><td>${p.authBy||'—'}</td><td>${p.ref||'—'}</td><td>${p.time||'—'}</td><td>${obGPS(p.lat,p.lng)}</td><td>${obPhoto(p.photoURL)}</td><td>${p.guard||'—'}</td></tr>`;
+    });
+  });
+}
+
+function loadOBGuardsLive() {
+  if (!db) return;
+  const tbody = document.getElementById('ob-glive-body');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+  const cutoff = Date.now() - 15 * 60 * 1000;
+  db.ref('liveGuards').once('value').then(snap => {
+    tbody.innerHTML = '';
+    if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>Hakuna guards online.</p></div></td></tr>`; return; }
+    const guards = [];
+    snap.forEach(c => { const g = {uid:c.key,...c.val()}; if (g.updatedAt && g.updatedAt > cutoff) guards.push(g); });
+    guards.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    if (!guards.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>Hakuna guards online (dakika 15).</p></div></td></tr>`; return; }
+    guards.forEach(g => {
+      const mins = g.updatedAt ? Math.round((Date.now()-g.updatedAt)/60000) : null;
+      const t = mins===null?'—':mins===0?'Sasa hivi':`Dakika ${mins} zilizopita`;
+      const sc = mins!==null&&mins<=3?'badge-green':mins!==null&&mins<=8?'badge-gold':'badge-red';
+      const sl = mins!==null&&mins<=3?'🟢 Online':mins!==null&&mins<=8?'🟡 Karibu':'🔴 Mbali';
+      tbody.innerHTML += `<tr><td><strong>${g.name||'—'}</strong></td><td>${g.site||'—'}</td><td>${obGPS(g.lat,g.lng)}</td><td style="font-size:12px;">${t}</td><td><span class="badge ${sc}">${sl}</span></td><td>${g.lat?`<a class="ob-gps-link" href="https://maps.google.com/?q=${g.lat},${g.lng}" target="_blank">🗺 Ona</a>`:'—'}</td></tr>`;
+    });
+  });
+}
+
+function obExportAll() {
+  const nodes = ['gate_entries','patrol_logs','incidents','vehicle_logs','key_logs','property_passes'];
+  nodes.forEach((node,i) => {
+    setTimeout(() => {
+      db.ref(node).once('value').then(snap => {
+        let csv = 'Timestamp,Guard,Site,Data\n';
+        snap.forEach(siteNode => siteNode.forEach(c => { const v=c.val(); const ts=v.timestamp?new Date(v.timestamp).toLocaleString():''; csv+=`"${ts}","${v.guard||''}","${v.site||''}","${JSON.stringify(v).replace(/"/g,'""')}"\n`; }));
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+        a.download = `AJPLUS_OB_${node}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click(); URL.revokeObjectURL(a.href);
+      });
+    }, i * 500);
+  });
+  showToast('Kutengeneza CSV zote 6...', 'info');
+}
+
+/* ================================================================
+   MAP
+================================================================ */
+function initMap() {
+  if (liveMap) return;
+  liveMap = L.map('liveMap').setView([-6.7924, 39.2083], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(liveMap);
+
+  db.ref('liveGuards').on('value', snap => {
+    Object.values(mapMarkers).forEach(m => liveMap.removeLayer(m));
+    mapMarkers = {};
+    let cnt = 0;
+    if (snap.val()) {
+      Object.entries(snap.val()).forEach(([key, g]) => {
+        if (g.lat && g.lng) {
+          cnt++;
+          const icon = L.divIcon({
+            html:`<div style="background:#EABF0B;color:#060d1a;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.5)">🛡️ ${g.name||'Guard'}</div>`,
+            className:'',iconAnchor:[0,0],
+          });
+          const m = L.marker([g.lat,g.lng],{icon}).addTo(liveMap);
+          m.bindPopup(`<b>${g.name||'Guard'}</b><br>📍 ${g.site||'—'}<br>🕒 ${g.updatedAt?new Date(g.updatedAt).toLocaleTimeString():'—'}`);
+          mapMarkers[key] = m;
+        }
+      });
+    }
+    document.getElementById('mapOnline').textContent  = cnt;
+    document.getElementById('mapPatrols').textContent = cnt;
+  });
+
+  db.ref('emergency').on('value', snap => {
+    document.getElementById('mapEmergency').textContent = snap.numChildren();
+  });
+}
+
+function searchMapLocation() {
+  if (!liveMap) { showToast('Fungua ukurasa wa Ramani kwanza!', 'error'); return; }
+  const q = document.getElementById('mapSearchInput').value.trim();
+  if (!q) { showToast('Andika jina la eneo!', 'error'); return; }
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
+    .then(r => r.json()).then(data => {
+      if (data.length > 0) {
+        liveMap.setView([parseFloat(data[0].lat),parseFloat(data[0].lon)], 15);
+        if (searchMarker) liveMap.removeLayer(searchMarker);
+        searchMarker = L.marker([parseFloat(data[0].lat),parseFloat(data[0].lon)]).addTo(liveMap).bindPopup(q).openPopup();
+      } else { showToast('Eneo halipatikani.', 'error'); }
+    }).catch(() => showToast('Tatizo la mtandao.', 'error'));
+}
+
+/* ================================================================
+   REPORTS
+================================================================ */
+function loadReports() { /* triggered by stats listener */ }
+
+function renderReportsTable(filter = '') {
+  const tbody = document.getElementById('reportsTableBody');
+  if (!tbody) return;
+
+  /* If no data yet and db available, fetch now */
+  if (allReportsData.length === 0 && db) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>⏳ Inapakia ripoti...</p></div></td></tr>`;
+    db.ref('reports').orderByChild('timestamp').limitToLast(100).once('value').then(snap => {
+      allReportsData = [];
+      snap.forEach(c => allReportsData.push({ id: c.key, ...c.val() }));
+      renderReportsTable(filter);
+    });
+    return;
+  }
+
+  let data = [...allReportsData].sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+  if (filter) {
+    const q = filter.toLowerCase();
+    data = data.filter(r =>
+      (r.guard||'').toLowerCase().includes(q) ||
+      (r.site||'').toLowerCase().includes(q) ||
+      (r.type||'').toLowerCase().includes(q) ||
+      (r.message||'').toLowerCase().includes(q)
+    );
+  }
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">📝</div><p>${filter?'Hakuna matokeo.':'Hakuna ripoti bado.'}</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => {
+    const t = r.timestamp ? new Date(r.timestamp).toLocaleString('sw-TZ') : '—';
+    /* Badge color based on type */
+    const isIncident = (r.type||'').includes('Tukio') || (r.type||'').includes('incident');
+    const isPatrol   = (r.type||'').includes('Doria') || (r.type||'').includes('patrol');
+    const typeBadge  = isIncident
+      ? `<span class="badge badge-red">${r.type||'General'}</span>`
+      : isPatrol
+        ? `<span class="badge badge-green">${r.type||'General'}</span>`
+        : `<span class="badge badge-muted">${r.type||'General'}</span>`;
+    return `<tr>
+      <td style="white-space:nowrap;font-size:12px;">${t}</td>
+      <td><strong>${r.guard||'—'}</strong></td>
+      <td style="font-size:12px;">${r.site||'—'}</td>
+      <td>${typeBadge}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">${r.message||'—'}</td>
+      <td><button class="btn btn-blue btn-sm" onclick="viewReport('${r.id}')">👁</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterReportsTable() {
+  renderReportsTable(document.getElementById('reportSearch').value);
+}
+
+function viewReport(id) {
+  /* Find in local cache first (handles patrol_logs, incidents too) */
+  const cached = allReportsData.find(r => r.id === id);
+  if (cached) {
+    alert(
+      `📅 Tarehe  : ${cached.timestamp ? new Date(cached.timestamp).toLocaleString('sw-TZ') : '—'}\n` +
+      `🛡️ Mlinzi  : ${cached.guard||'—'}\n` +
+      `📍 Kituo   : ${cached.site||'—'}\n` +
+      `📋 Aina    : ${cached.type||'—'}\n` +
+      `📂 Chanzo  : ${cached._source||'reports'}\n\n` +
+      `💬 Ujumbe  : ${cached.message||'Hakuna ujumbe'}`
+    );
+    return;
+  }
+  /* Fallback to Firebase */
+  db.ref('reports/' + id).once('value').then(snap => {
+    const r = snap.val(); if (!r) return;
+    alert(`📅 ${r.timestamp ? new Date(r.timestamp).toLocaleString() : '—'}\n🛡️ Mlinzi: ${r.guard||'—'}\n📍 Kituo: ${r.site||'—'}\n📋 Aina: ${r.type||'—'}\n\n💬 ${r.message||'Hakuna ujumbe'}`);
+  });
+}
+
+function exportReportsCSV() {
+  let csv = 'Tarehe,Mlinzi,Kituo,Aina,Ujumbe\n';
+  allReportsData.forEach(r => {
+    const d = r.timestamp ? new Date(r.timestamp).toLocaleString() : '';
+    csv += `"${d}","${r.guard||''}","${r.site||''}","${r.type||''}","${(r.message||'').replace(/"/g,'""')}"\n`;
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `AJPLUS_Reports_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('CSV imedownload!', 'success');
+}
+
+/* ================================================================
+   ANALYTICS / CHARTS
+================================================================ */
+function initCharts() { setTimeout(updateCharts, 500); }
+
+function updateCharts() {
+  if (!db || typeof Chart === 'undefined') return;
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date().getMonth();
+
+  const guardCtx = document.getElementById('guardsChart');
+  if (guardCtx) {
+    if (guardChartInst) guardChartInst.destroy();
+    const counts = new Array(12).fill(0);
+    allGuardsData.forEach(g => { if (g.createdAt) counts[new Date(g.createdAt).getMonth()]++; });
+    guardChartInst = new Chart(guardCtx.getContext('2d'), {
+      type:'bar',
+      data:{labels:months,datasets:[{label:'Guards',data:counts,backgroundColor:'rgba(234,191,11,0.6)',borderColor:'#EABF0B',borderWidth:2,borderRadius:6}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#8a98b8'},grid:{color:'rgba(255,255,255,0.04)'}},x:{ticks:{color:'#8a98b8'},grid:{display:false}}}}
+    });
+  }
+
+  const revCtx = document.getElementById('revenueChart');
+  if (revCtx) {
+    if (revenueChartInst) revenueChartInst.destroy();
+    const rev = months.map((_,i) => i <= now ? Math.floor(Math.random()*8+2) : 0);
+    revenueChartInst = new Chart(revCtx.getContext('2d'), {
+      type:'line',
+      data:{labels:months,datasets:[{label:'Mapato (TZS M)',data:rev,backgroundColor:'rgba(15,168,148,0.1)',borderColor:'#0fa894',borderWidth:2,fill:true,tension:0.4,pointBackgroundColor:'#0fa894'}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#8a98b8'},grid:{color:'rgba(255,255,255,0.04)'}},x:{ticks:{color:'#8a98b8'},grid:{display:false}}}}
+    });
+  }
+}
+
+/* ================================================================
+   PAYROLL & INVOICES — MFUMO KAMILI WA FIREBASE
+
+   JINSI INAVYOFANYA KAZI:
+   ──────────────────────────────────────────
+   INVOICES (Ankara kwa Wateja):
+   • Admin anatengeneza invoice kwa kila mteja kila mwezi
+   • Invoice = idadi ya guards × rate kwa siku × siku za kazi
+   • Mfano: Guard 1 × TZS 25,000/siku × 26 siku = TZS 650,000
+   • Invoice inahifadhiwa: invoices/{invoiceId} kwenye Firebase
+   • Mteja anaweza kulipa na admin anabadilisha hali → "paid"
+
+   PAYROLL (Mshahara wa Guards):
+   • Mfumo unasoma guards wote kutoka Firebase
+   • Kila guard ana "dailyRate" kwenye profile yake (au default)
+   • Admin anaweza kuweka "daysWorked" na kubonyeza "Lipa"
+   • Payroll inahifadhiwa: payroll/{guardId}/{month}
+
+   DATA STRUCTURE KWENYE FIREBASE:
+   ┌─────────────────────────────────────────┐
+   │ invoices/                               │
+   │   {invoiceId}/                          │
+   │     clientId, clientName, month         │
+   │     guardsCount, ratePerDay, daysWorked │
+   │     totalAmount, status, createdAt      │
+   │                                         │
+   │ payroll/                                │
+   │   {guardId}/                            │
+   │     {month}/  (mfano: 2025-01)          │
+   │       daysWorked, dailyRate             │
+   │       totalAmount, status, paidAt       │
+   │                                         │
+   │ guards/{guardId}/                       │
+   │     dailyRate: 25000  ← ongeza hii!     │
+   └─────────────────────────────────────────┘
+================================================================ */
+
+/* --- State ya Payroll --- */
+let currentPayrollTab = 'invoices';
+
+function openPayrollTab(tab, btn) {
+  currentPayrollTab = tab;
+  document.getElementById('payroll-invoices-panel').style.display = tab === 'invoices' ? 'block' : 'none';
+  document.getElementById('payroll-guards-panel').style.display  = tab === 'guards'   ? 'block' : 'none';
+  document.querySelectorAll('#ptab-invoices, #ptab-guards').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('ptab-' + tab);
+  if (activeBtn) activeBtn.classList.add('active');
+  if (btn) { /* already handled above */ }
+  if (tab === 'guards')   loadGuardPayroll();
+  if (tab === 'invoices') loadInvoices();
+}
+
+/* ── Load Invoices from Firebase ── */
+function loadPayroll() {
+  loadInvoices();
+  loadPayrollSummary();
+}
+
+function loadInvoices() {
+  if (!db) return;
+  const tbody = document.getElementById('invoiceTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  db.ref('invoices').orderByChild('createdAt').limitToLast(50).once('value').then(snap => {
+    if (!snap.exists()) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">📄</div>
+        <p>Hakuna invoices bado. Bonyeza <strong>"+ Invoice Mpya"</strong> kutengeneza.</p></div></td></tr>`;
+      return;
+    }
+    const rows = [];
+    snap.forEach(c => rows.push({ id: c.key, ...c.val() }));
+    rows.reverse();
+
+    tbody.innerHTML = rows.map(inv => {
+      const total = inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+      const sc = inv.status === 'paid' ? 'badge-green' : inv.status === 'overdue' ? 'badge-red' : 'badge-gold';
+      const sl = inv.status === 'paid' ? '✅ Imelipwa' : inv.status === 'overdue' ? '🔴 Imechelewa' : '⏳ Inasubiri';
+      return `<tr>
+        <td><strong style="font-family:monospace;font-size:12px;">${inv.id.slice(-8).toUpperCase()}</strong></td>
+        <td><strong>${inv.clientName||'—'}</strong></td>
+        <td style="font-size:12px;color:var(--muted);">${inv.guardsCount||1} guard</td>
+        <td style="font-size:12px;">${inv.month||'—'}</td>
+        <td style="font-size:12px;">${Number(inv.ratePerDay||0).toLocaleString()}</td>
+        <td style="font-size:12px;">${inv.daysWorked||26}</td>
+        <td><strong style="color:var(--green);">TZS ${Number(total).toLocaleString()}</strong></td>
+        <td><span class="badge ${sc}">${sl}</span></td>
+        <td style="display:flex;gap:5px;flex-wrap:wrap;">
+          ${inv.status !== 'paid' ? `<button class="btn btn-teal btn-sm" onclick="markInvoicePaid('${inv.id}')">💳 Lipa</button>` : ''}
+          <button class="btn btn-blue btn-sm" onclick="printInvoice('${inv.id}')">🖨️</button>
+          <button class="btn btn-red btn-sm" onclick="deleteInvoice('${inv.id}')">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  });
+}
+
+/* ── Guard Payroll from Firebase ── */
+function loadGuardPayroll() {
+  if (!db) return;
+  const tbody = document.getElementById('guardPayrollBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  const now   = new Date();
+  const month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  db.ref('guards').once('value').then(snap => {
+    if (!snap.exists()) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🛡️</div><p>Hakuna guards bado.</p></div></td></tr>`;
+      return;
+    }
+    const guards = [];
+    snap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+
+    /* Load payroll data for each guard this month */
+    const promises = guards.map(g =>
+      db.ref(`payroll/${g.id}/${month}`).once('value').then(ps => ({ guard: g, payroll: ps.val() }))
+    );
+
+    Promise.all(promises).then(results => {
+      let grandTotal = 0;
+      tbody.innerHTML = results.map(({ guard: g, payroll: p }) => {
+        const rate  = g.dailyRate || 25000;
+        const days  = p ? p.daysWorked : 26;
+        const total = rate * days;
+        grandTotal += total;
+        const status = p ? p.status : 'pending';
+        const sc = status === 'paid' ? 'badge-green' : 'badge-gold';
+        const sl = status === 'paid' ? '✅ Amelipwa' : '⏳ Hajalipwa';
+        return `<tr>
+          <td><strong>${g.name||'—'}</strong></td>
+          <td style="font-size:12px;">${g.station||'—'}</td>
+          <td style="font-size:12px;">${g.clientName||'<span style="color:var(--muted)">Hana mteja</span>'}</td>
+          <td>
+            <input type="number" value="${days}" min="0" max="31"
+              style="width:60px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:12px;outline:none;"
+              onchange="updateGuardDays('${g.id}','${month}',this.value,${rate})">
+          </td>
+          <td>
+            <input type="number" value="${rate}" min="0"
+              style="width:90px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:12px;outline:none;"
+              onchange="updateGuardRate('${g.id}',this.value)">
+          </td>
+          <td><strong style="color:var(--green);">TZS ${Number(total).toLocaleString()}</strong></td>
+          <td><span class="badge ${sc}">${sl}</span></td>
+          <td style="display:flex;gap:5px;">
+            ${status !== 'paid' ? `<button class="btn btn-teal btn-sm" onclick="markGuardPaid('${g.id}','${month}',${rate},${days})">💳 Lipa</button>` : '✅'}
+          </td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('payGuardTotal').textContent = 'TZS ' + Number(grandTotal).toLocaleString();
+    });
+  });
+}
+
+/* ── Payroll Summary Stats ── */
+function loadPayrollSummary() {
+  if (!db) return;
+  const now   = new Date();
+  const month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  db.ref('invoices').orderByChild('month').equalTo(month).once('value').then(snap => {
+    let total = 0, paid = 0, pending = 0;
+    snap.forEach(c => {
+      const inv = c.val();
+      const amt = inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+      total += amt;
+      if (inv.status === 'paid') paid++;
+      else pending++;
+    });
+    document.getElementById('payTotal').textContent   = 'TZS ' + Number(total).toLocaleString();
+    document.getElementById('payPaid').textContent    = paid;
+    document.getElementById('payPending').textContent = pending;
+  });
+}
+
+/* ── Open Invoice Modal ── */
+function openCreateInvoiceModal() {
+  /* Set default month to current */
+  const now   = new Date();
+  const month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('inv-month').value = month;
+  document.getElementById('inv-rate').value  = '';
+  document.getElementById('inv-days').value  = '26';
+  document.getElementById('inv-guards').value = '1';
+  document.getElementById('inv-notes').value  = '';
+  document.getElementById('invModalError').style.display = 'none';
+  document.getElementById('inv-calc-wrap').style.display = 'none';
+
+  /* Populate clients */
+  const sel = document.getElementById('inv-client');
+  sel.innerHTML = '<option value="">— Chagua Mteja —</option>';
+  allClientsData.filter(c => !['rejected','suspended'].includes((c.status||'').toLowerCase()) && c.name).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    opt.dataset.guards = c.guardsNeeded || 1;
+    sel.appendChild(opt);
+  });
+
+  /* Auto-fill guards count when client selected */
+  sel.onchange = () => {
+    const opt = sel.options[sel.selectedIndex];
+    if (opt.dataset.guards) document.getElementById('inv-guards').value = opt.dataset.guards;
+    calculateInvoice();
+  };
+
+  /* Live calculation */
+  ['inv-rate','inv-days','inv-guards'].forEach(id => {
+    document.getElementById(id).oninput = calculateInvoice;
+  });
+
+  openModal('createInvoiceModal');
+}
+
+function calculateInvoice() {
+  const rate   = parseFloat(document.getElementById('inv-rate').value)   || 0;
+  const days   = parseInt(document.getElementById('inv-days').value)     || 0;
+  const guards = parseInt(document.getElementById('inv-guards').value)   || 1;
+  const total  = rate * days * guards;
+  const wrap   = document.getElementById('inv-calc-wrap');
+  const text   = document.getElementById('inv-calc-text');
+  if (rate > 0 && days > 0) {
+    wrap.style.display = 'block';
+    text.innerHTML = `${guards} guard × TZS ${rate.toLocaleString()}/siku × ${days} siku = <span style="color:var(--green);font-size:16px;">TZS ${total.toLocaleString()}</span>`;
+  } else { wrap.style.display = 'none'; }
+}
+
+/* ── Save Invoice to Firebase ── */
+function saveInvoice() {
+  const clientSel = document.getElementById('inv-client');
+  const clientId  = clientSel.value;
+  const month     = document.getElementById('inv-month').value;
+  const rate      = parseFloat(document.getElementById('inv-rate').value);
+  const days      = parseInt(document.getElementById('inv-days').value);
+  const guards    = parseInt(document.getElementById('inv-guards').value) || 1;
+  const notes     = document.getElementById('inv-notes').value.trim();
+  const errEl     = document.getElementById('invModalError');
+
+  errEl.style.display = 'none';
+  if (!clientId) { errEl.textContent = '⚠️ Chagua mteja.';        errEl.style.display='block'; return; }
+  if (!month)    { errEl.textContent = '⚠️ Chagua mwezi.';         errEl.style.display='block'; return; }
+  if (!rate||rate<=0) { errEl.textContent = '⚠️ Weka rate ya siku.'; errEl.style.display='block'; return; }
+
+  const client      = allClientsData.find(c => c.id === clientId);
+  const clientName  = client ? client.name : clientSel.options[clientSel.selectedIndex].text;
+  const totalAmount = rate * days * guards;
+
+  const btn = document.getElementById('saveInvoiceBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inahifadhi...';
+
+  const invoiceData = {
+    clientId, clientName, month,
+    guardsCount: guards, ratePerDay: rate, daysWorked: days,
+    totalAmount, notes, status: 'pending',
+    createdAt: Date.now(), createdBy: currentUser?.uid || 'admin',
+  };
+
+  db.ref('invoices').push(invoiceData)
+    .then(() => {
+      closeModal('createInvoiceModal');
+      showToast(`✅ Invoice imetengenezwa — TZS ${totalAmount.toLocaleString()}`, 'success');
+      loadPayroll();
+    })
+    .catch(err => { errEl.textContent = '❌ ' + err.message; errEl.style.display='block'; })
+    .finally(() => { btn.disabled = false; btn.textContent = '💾 Hifadhi Invoice'; });
+}
+
+/* ── Mark Invoice as Paid ── */
+function markInvoicePaid(id) {
+  if (!confirm('Thibitisha: Invoice hii imelipwa?')) return;
+  db.ref('invoices/' + id).update({ status: 'paid', paidAt: Date.now() })
+    .then(() => { showToast('✅ Invoice imewekwa kama imelipwa.', 'success'); loadPayroll(); })
+    .catch(() => showToast('Imeshindwa kusasisha.', 'error'));
+}
+
+/* ── Delete Invoice ── */
+function deleteInvoice(id) {
+  if (!confirm('Futa invoice hii?')) return;
+  db.ref('invoices/' + id).remove()
+    .then(() => { showToast('Invoice imefutwa.', 'info'); loadPayroll(); })
+    .catch(() => showToast('Imeshindwa kufuta.', 'error'));
+}
+
+/* ── Print Invoice ── */
+function printInvoice(id) {
+  if (!db) return;
+  db.ref('invoices/' + id).once('value').then(snap => {
+    const inv = snap.val(); if (!inv) return;
+    const total = inv.totalAmount || (inv.guardsCount * inv.ratePerDay * inv.daysWorked);
+    const win = window.open('', '_blank', 'width=700,height=600');
+    win.document.write(`
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Invoice - ${inv.clientName}</title>
+      <style>
+        body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;padding:20px;}
+        .header{display:flex;justify-content:space-between;border-bottom:2px solid #EABF0B;padding-bottom:16px;margin-bottom:20px;}
+        .logo{font-size:22px;font-weight:900;color:#0a1628;}
+        .inv-id{font-size:12px;color:#64748b;margin-top:4px;}
+        table{width:100%;border-collapse:collapse;margin:20px 0;}
+        th{background:#0a1628;color:white;padding:10px;text-align:left;font-size:13px;}
+        td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:13px;}
+        .total{font-size:18px;font-weight:800;color:#0a1628;text-align:right;margin-top:16px;}
+        .status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;
+          background:${inv.status==='paid'?'#d1fae5':'#fef3c7'};color:${inv.status==='paid'?'#065f46':'#92400e'};}
+        @media print{button{display:none;}}
+      </style></head><body>
+      <div class="header">
+        <div><div class="logo">🛡️ AJPLUS SECURITY</div><div class="inv-id">Invoice ID: ${id.slice(-10).toUpperCase()}</div></div>
+        <div style="text-align:right"><div style="font-size:13px;color:#64748b;">Tarehe: ${new Date().toLocaleDateString('sw-TZ')}</div>
+        <span class="status">${inv.status==='paid'?'✅ Imelipwa':'⏳ Inasubiri Malipo'}</span></div>
+      </div>
+      <div><strong>Mteja:</strong> ${inv.clientName}</div>
+      <div style="margin-top:4px;"><strong>Mwezi:</strong> ${inv.month}</div>
+      <table>
+        <tr><th>Maelezo</th><th>Idadi</th><th>Rate</th><th>Jumla</th></tr>
+        <tr><td>Huduma ya Ulinzi — ${inv.month}</td><td>${inv.guardsCount} guard × ${inv.daysWorked} siku</td>
+            <td>TZS ${Number(inv.ratePerDay).toLocaleString()}/siku</td>
+            <td>TZS ${Number(total).toLocaleString()}</td></tr>
+      </table>
+      ${inv.notes ? `<div style="font-size:12px;color:#64748b;margin-bottom:16px;">Maelezo: ${inv.notes}</div>` : ''}
+      <div class="total">JUMLA: TZS ${Number(total).toLocaleString()}</div>
+      <div style="margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px;">
+        AJPLUS Security — Dar es Salaam, Tanzania | Asante kwa biashara yako.
+      </div>
+      <br><button onclick="window.print()" style="background:#0a1628;color:white;padding:10px 24px;border:none;border-radius:8px;cursor:pointer;font-size:14px;">🖨️ Print Invoice</button>
+      </body></html>`);
+    win.document.close();
+  });
+}
+
+/* ── Update Guard Days Worked ── */
+function updateGuardDays(guardId, month, days, rate) {
+  if (!db) return;
+  const total = parseFloat(rate) * parseInt(days);
+  db.ref(`payroll/${guardId}/${month}`).update({ daysWorked: parseInt(days), totalAmount: total })
+    .catch(() => showToast('Imeshindwa kusasisha siku.', 'error'));
+}
+
+/* ── Update Guard Daily Rate ── */
+function updateGuardRate(guardId, rate) {
+  if (!db) return;
+  Promise.all([
+    db.ref(`guards/${guardId}`).update({ dailyRate: parseFloat(rate) }),
+    db.ref(`users/${guardId}`).update({ dailyRate: parseFloat(rate) }),
+  ]).catch(() => showToast('Imeshindwa kusasisha rate.', 'error'));
+}
+
+/* ── Mark Guard as Paid ── */
+function markGuardPaid(guardId, month, rate, days) {
+  if (!confirm('Thibitisha: Guard huyu amelipwa mshahara?')) return;
+  const total = rate * days;
+  db.ref(`payroll/${guardId}/${month}`).update({
+    status: 'paid', paidAt: Date.now(),
+    dailyRate: rate, daysWorked: days, totalAmount: total,
+  })
+  .then(() => { showToast('✅ Mshahara wa guard umewekwa kama umelipwa.', 'success'); loadGuardPayroll(); })
+  .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+/* Kept for backwards compat */
+function generateInvoice() { openCreateInvoiceModal(); }
+
+/* ================================================================
+   PANIC ALERTS
+================================================================ */
+function listenPanicAlerts() {
+  if (!db) return;
+  db.ref('panic_alerts').orderByChild('timestamp').on('child_added', snap => {
+    const data = snap.val();
+    if (!data || snap.key === lastPanicKey) return;
+    lastPanicKey = snap.key;
+
+    document.getElementById('panicClientTxt').textContent = 'Mteja: ' + (data.clientName||'—');
+    document.getElementById('panicSiteTxt').textContent   = 'Eneo: '  + (data.clientSite||'—');
+    document.getElementById('panicTimeTxt').textContent   = 'Muda: '  + (data.timestamp ? new Date(data.timestamp).toLocaleString('sw-TZ') : '—');
+
+    document.getElementById('panicOverlay').classList.add('show');
+    document.getElementById('emergencySound').play().catch(()=>{});
+    showToast('🚨 PANIC ALERT kutoka ' + (data.clientName||'Mteja') + '!', 'error');
+  });
+}
+
+function dismissPanic() {
+  document.getElementById('panicOverlay').classList.remove('show');
+  if (lastPanicKey) db.ref('panic_alerts/' + lastPanicKey).update({ seenByAdmin: true });
+  showToast('Panic imezimwa.', 'info');
+}
+
+/* ================================================================
+   CHAT WIDGET
+================================================================ */
+function startChatInbox() {
+  if (!db) return;
+  db.ref('chats').on('child_added', snap => {
+    const uid = snap.key;
+    if (uid === 'supervisor_admin' || uid === 'supervisor_guards') return;
+    if (!chatThreads[uid]) chatThreads[uid] = { name: 'Mteja', site: '—', messages: [], unread: 0 };
+
+    if (!chatListeners[uid]) {
+      chatListeners[uid] = true;
+      db.ref('chats/' + uid).orderByChild('timestamp').on('child_added', msgSnap => {
+        const msg = msgSnap.val(); if (!msg) return;
+        if (msg.senderRole === 'mteja' || msg.senderRole === 'client') {
+          if (msg.senderName) chatThreads[uid].name = msg.senderName;
+          if (msg.site)       chatThreads[uid].site = msg.site;
+        }
+        if (!chatThreads[uid].messages.find(m => m._k === msgSnap.key)) {
+          chatThreads[uid].messages.push({ _k: msgSnap.key, ...msg });
+          if ((msg.senderRole==='mteja'||msg.senderRole==='client') && uid !== activeUid) {
+            chatThreads[uid].unread = (chatThreads[uid].unread||0) + 1;
+          }
+        }
+        renderChatClientList();
+        if (uid === activeUid) renderChatThread(uid);
+      });
+    }
+  });
+}
+
+function renderChatClientList() {
+  const list = document.getElementById('chatClientList');
+  if (!list) return;
+  const uids = Object.keys(chatThreads);
+  if (!uids.length) {
+    list.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--muted);text-align:center;">Hakuna ujumbe bado.</div>';
+    updateChatBadge(); return;
+  }
+  list.innerHTML = uids.map(uid => {
+    const t = chatThreads[uid];
+    const last = t.messages[t.messages.length-1];
+    const preview = last ? (last.text||'').slice(0,28) : '';
+    const pip = t.unread > 0
+      ? `<span class="unread-pip show">${t.unread}</span>` : '';
+    return `<div class="chat-client-item ${uid===activeUid?'active':''}" onclick="openChatThread('${uid}')">
+      <div><div style="font-weight:700;font-size:12.5px;">${t.name} ${pip}</div>
+      <div style="font-size:10.5px;color:var(--muted);">📍 ${t.site}</div>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${preview}</div></div>
+    </div>`;
+  }).join('');
+  updateChatBadge();
+}
+
+function updateChatBadge() {
+  const total = Object.values(chatThreads).reduce((s,t) => s + (t.unread||0), 0);
+  const badge = document.getElementById('chatBadge');
+  if (badge) { badge.textContent = total; badge.classList.toggle('show', total > 0); }
+}
+
+function openChatThread(uid) {
+  activeUid = uid;
+  if (chatThreads[uid]) chatThreads[uid].unread = 0;
+  renderChatClientList();
+  renderChatThread(uid);
+  document.getElementById('chatInput').focus();
+}
+
+function renderChatThread(uid) {
+  const thread = chatThreads[uid]; if (!thread) return;
+  document.getElementById('chatThreadHead').textContent = `👤 ${thread.name} — 📍 ${thread.site}`;
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = '';
+  thread.messages.forEach(m => {
+    const isMine  = m.senderRole === 'admin';
+    const isPanic = m.sender === 'PANIC';
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + (isPanic ? 'panic-msg' : isMine ? 'me' : 'them');
+    const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('sw-TZ',{hour:'2-digit',minute:'2-digit'}) : '';
+    div.innerHTML = `${m.text}<div class="chat-msg-time">${time}</div>`;
+    msgs.appendChild(div);
+  });
+  const cl = document.createElement('div'); cl.style.clear='both'; msgs.appendChild(cl);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function adminSendReply() {
+  if (!activeUid || !db) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim(); if (!text) return;
+  db.ref('users/' + currentUser.uid).once('value').then(snap => {
+    const name = (snap.val()||{}).name || 'Admin';
+    db.ref('chats/' + activeUid).push({
+      sender: 'admin', senderName: name, senderRole: 'admin',
+      text, timestamp: Date.now(),
+    })
+    .then(() => { input.value = ''; })
+    .catch(() => showToast('Imeshindwa kutuma.', 'error'));
+  });
+}
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chatWindow').classList.toggle('open', chatOpen);
+  if (chatOpen && activeUid) {
+    chatThreads[activeUid].unread = 0;
+    renderChatClientList();
+    document.getElementById('chatInput').focus();
+  }
+}
+
+/* ================================================================
+   MODAL HELPERS
+================================================================ */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* Close on overlay click */
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  }
 });
+
+/* ================================================================
+   SIDEBAR (mobile)
+================================================================ */
+function toggleSidebar() {
+    document.getElementById('sidebar')?.classList.toggle('open');
+    document.getElementById('sidebarOverlay')?.classList.toggle('show');
+}
+
+function closeSidebar() {
+    document.getElementById('sidebar')?.classList.remove('open');
+    document.getElementById('sidebarOverlay')?.classList.remove('show');
+}
+
+function closeSidebarMobile() { if (window.innerWidth <= 900) closeSidebar(); }
+
+/* ================================================================
+   TOAST
+================================================================ */
+function showToast(msg, type = 'info') {
+  const wrap  = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {success:'✅',error:'❌',info:'ℹ️'};
+  toast.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  wrap.appendChild(toast);
+  setTimeout(() => toast.style.opacity = '0', 3200);
+  setTimeout(() => toast.remove(), 3600);
+}
+
+/* ================================================================
+   QUICK ASSIGN GUARD — Kutoka kwenye Clients page moja kwa moja
+================================================================ */
+function quickAssignGuard(clientId, clientName) {
+  /* clientName may come from data-name attribute */
+  const c = allClientsData.find(x => x.id === clientId);
+  if (!c) { showToast('Mteja hakupatikana. Refresh ukurasa.', 'error'); return; }
+  const displayName = c.name || clientName || 'Mteja';
+
+  /* Populate available guards */
+  const available = allGuardsData.filter(g =>
+    (g.assignmentStatus || 'available') === 'available' && !g.clientId
+  );
+
+  if (available.length === 0) {
+    showToast('Hakuna guards wanaopatikana kwa sasa!', 'error');
+    return;
+  }
+
+  /* Build simple selection prompt */
+  const guardOptions = available.map((g, i) => `${i+1}. ${g.name} (${g.station||'—'})`).join('\n');
+  const choice = prompt(
+    `Chagua Guard kwa: ${displayName}
+
+${guardOptions}
+
+Andika nambari (1-${available.length}):`
+  );
+
+  if (!choice) return;
+  const idx = parseInt(choice) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= available.length) {
+    showToast('Nambari si sahihi.', 'error');
+    return;
+  }
+
+  const guard = available[idx];
+  if (!confirm(`Thibitisha:
+Guard: ${guard.name}
+Mteja: ${displayName}
+
+Endelea?`)) return;
+
+  const asgnRef = db.ref('assignments').push().key;
+  const updates = {};
+  updates[`assignments/${asgnRef}`] = {
+    clientId, clientName: c.name,
+    clientSite: c.site || c.location || c.eneo || '',
+    guardId: guard.id, guardName: guard.name,
+    status: 'active',
+    createdAt: Date.now(), createdBy: currentUser.uid,
+  };
+  updates[`guards/${guard.id}/assignmentId`]     = asgnRef;
+  updates[`guards/${guard.id}/clientId`]         = clientId;
+  updates[`guards/${guard.id}/clientName`]       = c.name;
+  updates[`guards/${guard.id}/assignmentStatus`] = 'assigned';
+  updates[`clients/${clientId}/guardId`]         = guard.id;
+  updates[`clients/${clientId}/guardName`]       = guard.name;
+  updates[`clients/${clientId}/status`]          = 'active';
+  updates[`users/${guard.id}/currentAssignment`] = {
+    assignmentId: asgnRef,
+    clientId, clientName: c.name,
+    clientSite: c.site || c.location || '',
+  };
+  updates[`users/${clientId}/currentGuard`] = {
+    assignmentId: asgnRef,
+    guardId: guard.id, guardName: guard.name,
+    clientSite: c.site || c.location || '',
+  };
+
+  db.ref().update(updates)
+    .then(() => {
+      showToast(`✅ ${guard.name} amewekwa kwa ${displayName}!`, 'success');
+    })
+    .catch(err => showToast('Imeshindwa: ' + err.message, 'error'));
+}
+
+/* ================================================================
+   LOGOUT
+================================================================ */
+function copyRules() {
+  const text = document.getElementById('firebaseRules')?.textContent;
+  if (!text) {
+    showToast('Haikupatikana! Nakili manually kutoka Settings → Firebase Rules', 'info');
+    return;
+  }
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('✅ Rules zimenakiliwa! Weka kwenye Firebase Console.', 'success'))
+    .catch(() => showToast('Nakili manually kutoka Settings → Firebase Rules', 'info'));
+}
+
+function doLogout() {
+  if (!confirm('Je, unataka kutoka kwenye mfumo?')) return;
+  
+  firebase.auth().signOut()
+    .then(() => { 
+        // Hakikisha hapa unaweka jina sahihi la ukurasa wako wa login
+        window.location.href = 'Ajplussecurity_login.html'; 
+    })
+    .catch((err) => {
+        showToast('Imeshindwa kutoka mfumoni: ' + err.message, 'error');
+    });
+}
 </script>
 </body>
 </html>
