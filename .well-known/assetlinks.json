@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "tz.co.ajplussecurity.twa",
+    "sha256_cert_fingerprints": ["1A:6E:55:8D:AE:60:87:13:09:ED:F4:83:D0:35:91:B1:BE:64:25:1F:0A:90:2C:48:5A:4C:60:2C:4D:CF:51:4E"]
+  }
+}]
