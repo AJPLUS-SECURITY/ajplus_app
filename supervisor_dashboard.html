@@ -955,16 +955,43 @@
       document.getElementById("statSites").textContent = sites.size;
     });
 
-    // Ripoti za leo
-    db.ref("ob_reports").on("value", snap => {
+    // Ripoti za leo - FIX: ob_reports haitumiki tena, tunahesabu kutoka nodi 6 halisi
+    (function () {
       const today = new Date().toDateString();
-      let count = 0;
-      snap.forEach(c => {
-        const ts = c.val().timestamp;
-        if (ts && new Date(ts).toDateString() === today) count++;
+      let counts = {};
+      const cats = ["gate_entries", "patrol_logs", "incidents", "property_passes", "vehicle_logs", "key_logs"];
+
+      function renderTotal() {
+        const total = Object.values(counts).reduce((a, b) => a + b, 0);
+        document.getElementById("statReports").textContent = total;
+      }
+
+      ["gate_entries", "patrol_logs", "incidents", "property_passes"].forEach(cat => {
+        db.ref(cat).on("value", snap => {
+          let n = 0;
+          snap.forEach(siteSnap => {
+            siteSnap.forEach(recSnap => {
+              const ts = recSnap.val().timestamp;
+              if (ts && new Date(ts).toDateString() === today) n++;
+            });
+          });
+          counts[cat] = n;
+          renderTotal();
+        });
       });
-      document.getElementById("statReports").textContent = count;
-    });
+
+      ["vehicle_logs", "key_logs"].forEach(cat => {
+        db.ref(cat).on("value", snap => {
+          let n = 0;
+          snap.forEach(recSnap => {
+            const ts = recSnap.val().timestamp;
+            if (ts && new Date(ts).toDateString() === today) n++;
+          });
+          counts[cat] = n;
+          renderTotal();
+        });
+      });
+    })();
 
     // Emergency
     db.ref("emergency").on("value", snap => {
@@ -976,27 +1003,67 @@
 
   /* ====================================================
      OB REPORTS — Live kutoka Firebase
+
+     FIX MUHIMU: Hapo awali sehemu hii yote ilikuwa inasikiliza
+     node "ob_reports" ambayo HAKUNA sehemu ya Guard Dashboard
+     inayoandika tena. Guard sasa anaandika kwenye nodi 6 tofauti:
+     gate_entries, patrol_logs, incidents, property_passes (hizi
+     ni site-scoped: node/{siteId}/{recordId}) na vehicle_logs,
+     key_logs (flat: node/{recordId}, zenye field "site" ndani).
+
+     Matokeo yake: OB Feed ya Supervisor ilikuwa TUPU siku zote,
+     bila kujali Guard ametuma ripoti ngapi. Sasa tunasoma nodi
+     zote 6 halisi na kuziunganisha kwenye feed moja.
   ==================================================== */
+  const OB_SITE_SCOPED = ["gate_entries", "patrol_logs", "incidents", "property_passes"];
+  const OB_FLAT        = ["vehicle_logs", "key_logs"];
+
   function loadOBReports() {
-    const tbody = document.getElementById("obTableBody");
+    const categories = [...OB_SITE_SCOPED, ...OB_FLAT];
+    let latestBySource = {};
 
-    db.ref("ob_reports")
-      .orderByChild("timestamp")
-      .limitToLast(50)
-      .on("value", snap => {
-        allOBReports = [];
-        tbody.innerHTML = "";
+    function rebuildAndRender() {
+      let combined = [];
+      Object.values(latestBySource).forEach(arr => combined = combined.concat(arr));
+      combined.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      allOBReports = combined.slice(0, 100);
+      renderOBTable(allOBReports);
+    }
 
-        if (!snap.exists()) {
-          tbody.innerHTML = `<tr class="loading-row"><td colspan="6">Hakuna ripoti bado.</td></tr>`;
-          return;
-        }
-
-        snap.forEach(child => allOBReports.push({ key: child.key, ...child.val() }));
-        allOBReports.reverse();
-        renderOBTable(allOBReports);
+    OB_SITE_SCOPED.forEach(category => {
+      db.ref(category).on("value", snap => {
+        const list = [];
+        snap.forEach(siteSnap => {
+          const siteId = siteSnap.key;
+          siteSnap.forEach(recSnap => {
+            list.push({ key: recSnap.key, siteId, category, ...recSnap.val() });
+          });
+        });
+        latestBySource[category] = list;
+        rebuildAndRender();
       });
+    });
+
+    OB_FLAT.forEach(category => {
+      db.ref(category).on("value", snap => {
+        const list = [];
+        snap.forEach(recSnap => {
+          list.push({ key: recSnap.key, siteId: null, category, ...recSnap.val() });
+        });
+        latestBySource[category] = list;
+        rebuildAndRender();
+      });
+    });
   }
+
+  const OB_CATEGORY_LABELS = {
+    gate_entries:     "🚪 Gate",
+    patrol_logs:      "🕐 Doria",
+    incidents:        "🚨 Tukio",
+    property_passes:  "📦 Property",
+    vehicle_logs:     "🚗 Gari",
+    key_logs:         "🔑 Funguo"
+  };
 
   function renderOBTable(reports) {
     const tbody = document.getElementById("obTableBody");
@@ -1009,7 +1076,7 @@
 
     reports.forEach(r => {
       const isUrgent = (r.status || '').toLowerCase().includes("dharura") ||
-                       (r.event  || '').toLowerCase().includes("incident");
+                       r.category === "incidents";
       const badgeClass = isUrgent ? "badge-danger" : "badge-success";
       const badgeText  = isUrgent ? "🔴 Dharura"  : "🟢 Salama";
 
@@ -1019,12 +1086,12 @@
             ${r.timestamp ? new Date(r.timestamp).toLocaleString('sw-TZ') : '—'}
           </td>
           <td><strong>${r.guard || 'N/A'}</strong></td>
-          <td>${r.site || 'N/A'}</td>
-          <td>${r.event || r.type || 'General'}</td>
+          <td>${r.site || r.siteId || 'N/A'}</td>
+          <td>${OB_CATEGORY_LABELS[r.category] || r.category}</td>
           <td><span class="badge ${badgeClass}">${badgeText}</span></td>
           <td style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn-sky"    onclick="viewOBReport('${r.key}')">👁 Angalia</button>
-            <button class="btn-danger" onclick="deleteOBReport('${r.key}')">🗑 Futa</button>
+            <button class="btn-sky"    onclick="viewOBReport('${r.category}','${r.siteId || ''}','${r.key}')">👁 Angalia</button>
+            <button class="btn-danger" onclick="deleteOBReport('${r.category}','${r.siteId || ''}','${r.key}')">🗑 Futa</button>
           </td>
         </tr>`;
     });
@@ -1036,29 +1103,36 @@
       (r.guard  || '').toLowerCase().includes(q) ||
       (r.site   || '').toLowerCase().includes(q) ||
       (r.event  || '').toLowerCase().includes(q) ||
-      (r.message|| '').toLowerCase().includes(q)
+      (r.message|| '').toLowerCase().includes(q) ||
+      (r.notes  || '').toLowerCase().includes(q)
     );
     renderOBTable(filtered);
   }
 
-  function viewOBReport(key) {
-    db.ref("ob_reports/" + key).once("value").then(snap => {
+  function obPath(category, siteId, key) {
+    return OB_SITE_SCOPED.includes(category)
+      ? `${category}/${siteId}/${key}`
+      : `${category}/${key}`;
+  }
+
+  function viewOBReport(category, siteId, key) {
+    db.ref(obPath(category, siteId, key)).once("value").then(snap => {
       const r = snap.val();
       if (!r) return;
       alert(
+        "📂 Aina    : " + (OB_CATEGORY_LABELS[category] || category) + "\n" +
         "📅 Tarehe  : " + (r.timestamp ? new Date(r.timestamp).toLocaleString() : '—') + "\n" +
         "🛡️ Mlinzi  : " + (r.guard   || '—') + "\n" +
-        "📍 Kituo   : " + (r.site    || '—') + "\n" +
-        "📋 Aina    : " + (r.event   || '—') + "\n" +
+        "📍 Kituo   : " + (r.site || siteId || '—') + "\n" +
         "🔰 Hali    : " + (r.status  || '—') + "\n\n" +
-        "💬 Maelezo : " + (r.message || '—')
+        "💬 Maelezo : " + (r.message || r.notes || '—')
       );
     });
   }
 
-  function deleteOBReport(key) {
+  function deleteOBReport(category, siteId, key) {
     if (!confirm("Je, unataka kufuta ripoti hii?")) return;
-    db.ref("ob_reports/" + key).remove()
+    db.ref(obPath(category, siteId, key)).remove()
       .then(() => showToast("Ripoti imefutwa.", "danger"))
       .catch(() => showToast("Imeshindwa kufuta.", "danger"));
   }

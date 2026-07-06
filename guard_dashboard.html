@@ -2587,7 +2587,7 @@ async function submitProperty() {
     } catch(e) { console.log("Property photo upload imeshindwa:", e); }
   }
 
-  db.ref("property_passes/" + currentSiteId).({
+  db.ref("property_passes/" + currentSiteId).push({
     item, qty, carrier, carrierId, authBy,
     time, ref, condition, notes,
     photoURL,
