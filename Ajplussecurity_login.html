@@ -308,6 +308,9 @@
              onkeydown="if(event.key==='Enter') doLogin()">
       <button class="eye-btn" type="button" onclick="togglePass()">👁️</button>
     </div>
+    <div style="text-align:right; margin-top:6px;">
+      <a href="#" onclick="forgotPassword(); return false;" style="font-size:12.5px; color:#94a3b8; text-decoration:underline;">Umesahau Password?</a>
+    </div>
   </div>
 
   <!-- Login button -->
@@ -587,6 +590,35 @@ function checkStatusAndRedirect(user, data) {
    ERROR HANDLER — Ipo NJE ya verifyRoleAndRedirect()
    (Hii ndiyo ilikuwa BUG kubwa — ilikuwa ndani ya function)
 ================================================== */
+// FIX MPYA: Umesahau Password - ilikuwa haipo kabisa kwenye login ya
+// Admin/Guard/Supervisor/Client. Kama mtu akifungiwa nje, hakukuwa na
+// njia ya kurudi bila kuingia Firebase Console moja kwa moja.
+function forgotPassword() {
+  const email = document.getElementById('emailInput').value.trim();
+
+  if (!email) {
+    showMsg('⚠️ Andika email/namba ya ajira yako kwenye sehemu ya juu kabla ya kubonyeza hapa.', 'error');
+    return;
+  }
+
+  // Tumia mfumo ule ule wa kubadilisha input isiyo email kuwa email
+  // (kama ilivyofanyika kwenye doLogin) ili namba za ajira nazo zifanye kazi
+  const finalEmail = email.includes('@') ? email : email.toLowerCase().replace(/\s+/g, '') + '@ajplus.co.tz';
+
+  firebase.auth().sendPasswordResetEmail(finalEmail)
+    .then(() => {
+      showMsg(`✅ Tumekutumia email ya kubadilisha password kwenye ${finalEmail}. Angalia inbox yako (na folder ya Spam).`, 'success');
+    })
+    .catch(err => {
+      const msgs = {
+        'auth/user-not-found': 'Hatuna akaunti yenye email/namba hii.',
+        'auth/invalid-email':  'Email/namba uliyoweka si sahihi.',
+        'auth/too-many-requests': 'Majaribio mengi sana. Subiri kidogo kabla ya kujaribu tena.',
+      };
+      showMsg('❌ ' + (msgs[err.code] || err.message), 'error');
+    });
+}
+
 function handleLoginError(err) {
   setLoading(false);
   const msg = ERR[err.code] || ('❌ Kosa: ' + (err.message || 'Imeshindwa kuingia.'));
