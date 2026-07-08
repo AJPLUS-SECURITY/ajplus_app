@@ -1327,6 +1327,9 @@ function loadAdmins() {
         </td>
       </tr>`;
     }).join('');
+  }).catch(err => {
+    console.error('[loadAdmins] error:', err);
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
   });
 }
 
