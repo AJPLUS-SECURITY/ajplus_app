@@ -1292,9 +1292,16 @@ function loadAdmins() {
   const tbody = document.getElementById('adminsTableBody');
   tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
 
-  db.ref('users').orderByChild('role').equalTo('admin').once('value').then(snap => {
+  // FIX: awali ilitafuta role==='admin' pekee - Supervisor hakuonekana kamwe
+  // hata kama aliundwa sahihi. Sasa tunavuta Admin na Supervisor wote pamoja.
+  Promise.all([
+    db.ref('users').orderByChild('role').equalTo('admin').once('value'),
+    db.ref('users').orderByChild('role').equalTo('supervisor').once('value'),
+  ]).then(([adminSnap, supSnap]) => {
     allAdminsData = [];
-    snap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
+    adminSnap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
+    supSnap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
+    allAdminsData.sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
 
     if (allAdminsData.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">🛡️</div><p>Hakuna admin bado.</p></div></td></tr>`;
@@ -1306,8 +1313,9 @@ function loadAdmins() {
       const sc = isActive ? 'badge-emerald' : 'badge-red';
       const sl = isActive ? '✅ Active' : '⛔ Suspended';
       const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('sw-TZ') : '—';
+      const roleLabel = a.role === 'supervisor' ? '🧭 Supervisor' : '🛡️ Admin';
       return `<tr>
-        <td><strong>${a.name||'—'}</strong></td>
+        <td><strong>${a.name||'—'}</strong><br><span style="font-size:11px;color:var(--muted);">${roleLabel}</span></td>
         <td style="font-size:12px;color:var(--muted);">${a.email||'—'}</td>
         <td><span class="badge ${sc}">${sl}</span></td>
         <td style="font-size:12px;">${date}</td>
@@ -1335,10 +1343,14 @@ function addNewAdmin() {
   const name  = document.getElementById('adm-name').value.trim();
   const email = document.getElementById('adm-email').value.trim();
   const pass  = document.getElementById('adm-pass').value.trim();
+  // FIX: role ilikuwa imewekwa gumu ("admin") - dropdown ya "Aina ya Akaunti"
+  // haikuwa na maana yoyote. Sasa tunasoma chaguo halisi la mtumiaji.
+  const roleEl = document.getElementById('adm-role');
+  const role   = roleEl ? roleEl.value : 'admin';
   const errEl = document.getElementById('adminModalError');
   errEl.style.display = 'none';
 
-  if (!name)  { errEl.textContent = '⚠️ Andika jina la admin.'; errEl.style.display = 'block'; return; }
+  if (!name)  { errEl.textContent = '⚠️ Andika jina la mtumiaji.'; errEl.style.display = 'block'; return; }
   if (!email) { errEl.textContent = '⚠️ Andika email.'; errEl.style.display = 'block'; return; }
   if (!pass || pass.length < 6) { errEl.textContent = '⚠️ Password angalau herufi 6.'; errEl.style.display = 'block'; return; }
 
@@ -1355,7 +1367,7 @@ function addNewAdmin() {
       const uid = cred.user.uid;
       const userData = {
         uid, name, email,
-        role: 'admin', status: 'active',
+        role: role, status: 'active',
         createdAt: Date.now(),
         createdBy: currentOwner.uid,
       };
