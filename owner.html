@@ -945,12 +945,16 @@ function loadAllNotifications() {
     db.ref('invoices').orderByChild('createdAt').limitToLast(20).once('value'),
     db.ref('users').orderByChild('role').equalTo('admin').once('value'),
     db.ref('clients').orderByChild('timestamp').limitToLast(20).once('value'),
-  ]).then(([invSnap, adminSnap, clientSnap]) => {
+    // FIX: vuta pia orodha ya notifications ambazo Owner ameshaficha zamani
+    (currentOwner ? db.ref('users/' + currentOwner.uid + '/dismissedNotifs').once('value') : Promise.resolve(null)),
+  ]).then(([invSnap, adminSnap, clientSnap, dismissedSnap]) => {
     const notifs = [];
+    const dismissed = (dismissedSnap && dismissedSnap.val()) || {};
 
     invSnap.forEach(c => {
       const inv = c.val();
       notifs.push({
+        id: 'invoice_new_' + c.key,
         type: 'invoice_new',
         icon: '📄',
         color: 'var(--gold)',
@@ -960,6 +964,7 @@ function loadAllNotifications() {
       });
       if (inv.status === 'paid' && inv.paidAt) {
         notifs.push({
+          id: 'invoice_paid_' + c.key,
           type: 'invoice_paid',
           icon: '✅',
           color: 'var(--emerald)',
@@ -973,6 +978,7 @@ function loadAllNotifications() {
     adminSnap.forEach(c => {
       const a = c.val();
       notifs.push({
+        id: (a.status === 'suspended' ? 'admin_suspended_' : 'admin_new_') + c.key,
         type: a.status === 'suspended' ? 'admin_suspended' : 'admin_new',
         icon: a.status === 'suspended' ? '⛔' : '🛡️',
         color: a.status === 'suspended' ? 'var(--red)' : 'var(--purple3)',
@@ -987,6 +993,7 @@ function loadAllNotifications() {
     clientSnap.forEach(c => {
       const cl = c.val();
       notifs.push({
+        id: 'client_new_' + c.key,
         type: 'client_new',
         icon: '👥',
         color: 'var(--blue)',
@@ -996,10 +1003,21 @@ function loadAllNotifications() {
       });
     });
 
-    notifs.sort((a, b) => b.time - a.time);
-    allNotifs = notifs.slice(0, 50);
+    // FIX: ondoa zile ambazo Owner tayari ameshabonyeza "✕" kuficha
+    const visible = notifs.filter(n => !dismissed[n.id]);
+
+    visible.sort((a, b) => b.time - a.time);
+    allNotifs = visible.slice(0, 50);
     return allNotifs;
   });
+}
+
+// FIX MPYA: Owner anaweza kuficha notification moja moja - haiondoi data
+// halisi (invoice/admin/client), inaficha tu kwenye orodha ya notifications.
+function dismissNotif(id) {
+  if (!db || !currentOwner) return;
+  db.ref('users/' + currentOwner.uid + '/dismissedNotifs/' + id).set(true)
+    .then(() => loadNotifications());
 }
 
 function loadNotifications() {
@@ -1034,10 +1052,11 @@ function renderNotifDropdown(notifs) {
   list.innerHTML = recent.map(n => `
     <div class="notif-item">
       <span class="ni-icon">${n.icon}</span>
-      <div>
+      <div style="flex:1;">
         <div class="ni-text">${n.text}</div>
         <div class="ni-time">${timeAgo(n.time)}</div>
       </div>
+      <button onclick="event.stopPropagation(); dismissNotif('${n.id}')" title="Ficha" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;">✕</button>
     </div>
   `).join('');
 }
@@ -1050,12 +1069,13 @@ function renderNotifFullList(notifs) {
     return;
   }
   list.innerHTML = notifs.map(n => `
-    <div class="notif-list-item">
+    <div class="notif-list-item" style="display:flex;align-items:center;gap:10px;">
       <div class="nli-icon" style="background:${n.bg};color:${n.color};">${n.icon}</div>
-      <div>
+      <div style="flex:1;">
         <div class="nli-text">${n.text}</div>
         <div class="nli-time">${timeAgo(n.time)}</div>
       </div>
+      <button onclick="dismissNotif('${n.id}')" title="Ficha" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:6px;">✕</button>
     </div>
   `).join('');
 }
