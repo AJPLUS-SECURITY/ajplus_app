@@ -469,6 +469,7 @@ select.form-input option{background:var(--bg3);}
       <div class="nav-item active" onclick="openPage('overview',this)"><span class="ic">📊</span><span>Overview</span></div>
       <div class="nav-item" onclick="openPage('revenue',this)"><span class="ic">💰</span><span>Revenue</span></div>
       <div class="nav-item" onclick="openPage('admins',this)"><span class="ic">🛡️</span><span>Admins</span></div>
+      <div class="nav-item" onclick="openPage('guards',this)"><span class="ic">👮</span><span>Guards</span></div>
       <div class="nav-item" onclick="openPage('notifications',this)"><span class="ic">🔔</span><span>Notifications</span></div>
       <div class="nav-item" onclick="openPage('reports',this)"><span class="ic">📑</span><span>Reports</span></div>
     </nav>
@@ -607,6 +608,27 @@ select.form-input option{background:var(--bg3);}
         </div>
       </section>
 
+      <!-- ===== GUARDS (Owner - read only overview, uongezaji halisi upo Admin Dashboard) ===== -->
+      <section id="page-guards" class="page">
+        <div class="page-header">
+          <div><h2>👮 Walinzi (Guards)</h2><p>Muhtasari wa walinzi wote waliosajiliwa mfumoni</p></div>
+          <button class="btn btn-ghost btn-sm" onclick="loadGuardsOwner()">🔄 Refresh</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Jina</th><th>Simu</th><th>Kituo/Site</th><th>Hali</th></tr></thead>
+                <tbody id="guardsOwnerTableBody"><tr><td colspan="4"><div class="empty-state"><p>Inapakia...</p></div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:12.5px;color:var(--muted);font-style:italic;">
+          Kuongeza mlinzi mpya au kuhariri taarifa zake hufanyika kwenye Admin Dashboard (admin.html).
+        </div>
+      </section>
+
       <!-- ===== NOTIFICATIONS ===== -->
       <section id="page-notifications" class="page">
         <div class="page-header">
@@ -663,14 +685,21 @@ select.form-input option{background:var(--bg3);}
 <div class="modal-overlay" id="addAdminModal">
   <div class="modal">
     <div class="modal-header">
-      <h3>🛡️ Ongeza Admin Mpya</h3>
+      <h3>🛡️ Ongeza Admin / Supervisor Mpya</h3>
       <button class="modal-close" onclick="closeModal('addAdminModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-group full"><label>Jina Kamili *</label><input class="form-input" id="adm-name" placeholder="Jina la Admin"></div>
-        <div class="form-group full"><label>Email *</label><input class="form-input" type="email" id="adm-email" placeholder="admin@ajplus.co.tz"></div>
+        <div class="form-group full"><label>Jina Kamili *</label><input class="form-input" id="adm-name" placeholder="Jina la Mtumiaji"></div>
+        <div class="form-group full"><label>Email *</label><input class="form-input" type="email" id="adm-email" placeholder="jina@ajplus.co.tz"></div>
         <div class="form-group full"><label>Password ya Awali *</label><input class="form-input" type="password" id="adm-pass" placeholder="Angalau herufi 6"></div>
+        <div class="form-group full">
+          <label>Aina ya Akaunti *</label>
+          <select class="form-input" id="adm-role">
+            <option value="admin">Admin</option>
+            <option value="supervisor">Supervisor</option>
+          </select>
+        </div>
       </div>
       <div id="adminModalError" style="display:none;margin-top:12px;padding:10px;background:var(--red2);border-left:3px solid var(--red);border-radius:6px;font-size:13px;color:#fca5a5;"></div>
     </div>
@@ -851,6 +880,7 @@ const PAGE_TITLES = {
   overview: ['Overview', 'Muhtasari wa biashara nzima'],
   revenue:  ['Revenue', 'Mapato na faida ya mfumo'],
   admins:   ['Admins', 'Usimamizi wa wasimamizi'],
+  guards:   ['Guards', 'Muhtasari wa walinzi wote'],
   notifications: ['Notifications', 'Matukio ya hivi karibuni'],
   reports:  ['Reports', 'Ripoti za mwezi — PDF/Excel'],
 };
@@ -866,6 +896,7 @@ function openPage(pageId, el) {
 
   if (pageId === 'revenue') loadRevenuePage();
   if (pageId === 'admins')  loadAdmins();
+  if (pageId === 'guards')  loadGuardsOwner();
   if (pageId === 'notifications') loadNotifications();
   closeSidebarMobile();
 }
@@ -1284,6 +1315,8 @@ function loadAdmins() {
           ${isActive
             ? `<button class="btn btn-red btn-sm" onclick="suspendAdmin('${a.id}')">⛔ Suspend</button>`
             : `<button class="btn btn-emerald btn-sm" onclick="reactivateAdmin('${a.id}')">✅ Activate</button>`}
+          <button class="btn btn-ghost btn-sm" onclick="deleteAdmin('${a.id}', '${(a.name||a.email||'').replace(/'/g,"")}')">🗑️ Futa</button>
+          <button class="btn btn-red btn-sm" onclick="deleteAdminRecord('${a.id}','${(a.name||a.email||'').replace(/'/g,"")}')">🗑️ Futa</button>
         </td>
       </tr>`;
     }).join('');
@@ -1294,6 +1327,7 @@ function openAddAdminModal() {
   document.getElementById('adm-name').value  = '';
   document.getElementById('adm-email').value = '';
   document.getElementById('adm-pass').value  = '';
+  document.getElementById('adm-role').value  = 'admin';
   document.getElementById('adminModalError').style.display = 'none';
   document.getElementById('addAdminModal').classList.add('open');
 }
@@ -1345,11 +1379,64 @@ function addNewAdmin() {
     .finally(() => { btn.disabled = false; btn.textContent = '✅ Hifadhi Admin'; });
 }
 
+// FIX MPYA: Owner sasa anaweza kuona orodha ya Walinzi (Guards) moja kwa moja
+function loadGuardsOwner() {
+  if (!db) return;
+  const tbody = document.getElementById('guardsOwnerTableBody');
+  tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
+
+  db.ref('guards').once('value').then(snap => {
+    const guards = [];
+    snap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+
+    if (guards.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="icon">👮</div><p>Hakuna mlinzi bado.</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = guards.map(g => {
+      const online = (g.status || '').toLowerCase() === 'online';
+      return `<tr>
+        <td><strong>${g.name || '—'}</strong></td>
+        <td style="font-size:12px;color:var(--muted);">${g.phone || '—'}</td>
+        <td>${g.site || '—'}</td>
+        <td><span class="badge ${online ? 'badge-emerald' : 'badge-red'}">${online ? '🟢 Online' : '⚪ Offline'}</span></td>
+      </tr>`;
+    }).join('');
+  }).catch(err => {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
+  });
+}
+
+// FIX MPYA: Futa Admin kabisa (siyo Suspend tu) - inaondoa rekodi yake ya
+// mfumo (users/{uid}), hivyo hataweza tena ku-login. (Akaunti ya
+// Authentication/email inabaki - futa hiyo tofauti kwenye Firebase Console
+// kama unataka kuiondoa kabisa kabisa.)
+function deleteAdmin(id, name) {
+  if (!confirm(`Je, una uhakika unataka KUFUTA KABISA admin "${name}"? Hii haiwezi kutenguliwa.`)) return;
+  db.ref('users/' + id).remove()
+    .then(() => { showToast(`Admin "${name}" amefutwa kabisa.`, 'info'); loadAdmins(); })
+    .catch(() => showToast('Imeshindwa kufuta.', 'error'));
+}
+
 function suspendAdmin(id) {
   if (!confirm('Suspend admin huyu? Hataweza kuingia mfumoni.')) return;
   db.ref('users/' + id).update({ status: 'suspended' })
     .then(() => { showToast('Admin amesimamishwa.', 'info'); loadAdmins(); })
     .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+// FIX MPYA: kabla hapakuwa na njia ya kufuta rekodi ya admin kabisa,
+// "Suspend" tu ndiyo iliyokuwepo. Hii inafuta rekodi ya database
+// (users/{uid}) - admin huyo hataonekana tena mfumoni wala kuweza
+// ku-login (login inashindwa kupata role yake). Akaunti ya Firebase
+// Auth (email/password) inabaki ipo Firebase Console kama backup,
+// lakini haifanyi kazi tena bila rekodi ya database.
+function deleteAdminRecord(id, name) {
+  if (!confirm(`Una uhakika unataka KUFUTA KABISA admin "${name}"? Hataweza tena kuingia mfumoni.`)) return;
+  db.ref('users/' + id).remove()
+    .then(() => { showToast(`Admin "${name}" amefutwa.`, 'info'); loadAdmins(); })
+    .catch(() => showToast('Imeshindwa kufuta.', 'error'));
 }
 
 function reactivateAdmin(id) {
