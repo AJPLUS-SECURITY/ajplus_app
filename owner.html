@@ -1315,7 +1315,6 @@ function loadAdmins() {
           ${isActive
             ? `<button class="btn btn-red btn-sm" onclick="suspendAdmin('${a.id}')">⛔ Suspend</button>`
             : `<button class="btn btn-emerald btn-sm" onclick="reactivateAdmin('${a.id}')">✅ Activate</button>`}
-          <button class="btn btn-ghost btn-sm" onclick="deleteAdmin('${a.id}', '${(a.name||a.email||'').replace(/'/g,"")}')">🗑️ Futa</button>
           <button class="btn btn-red btn-sm" onclick="deleteAdminRecord('${a.id}','${(a.name||a.email||'').replace(/'/g,"")}')">🗑️ Futa</button>
         </td>
       </tr>`;
@@ -1406,17 +1405,6 @@ function loadGuardsOwner() {
   }).catch(err => {
     tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
   });
-}
-
-// FIX MPYA: Futa Admin kabisa (siyo Suspend tu) - inaondoa rekodi yake ya
-// mfumo (users/{uid}), hivyo hataweza tena ku-login. (Akaunti ya
-// Authentication/email inabaki - futa hiyo tofauti kwenye Firebase Console
-// kama unataka kuiondoa kabisa kabisa.)
-function deleteAdmin(id, name) {
-  if (!confirm(`Je, una uhakika unataka KUFUTA KABISA admin "${name}"? Hii haiwezi kutenguliwa.`)) return;
-  db.ref('users/' + id).remove()
-    .then(() => { showToast(`Admin "${name}" amefutwa kabisa.`, 'info'); loadAdmins(); })
-    .catch(() => showToast('Imeshindwa kufuta.', 'error'));
 }
 
 function suspendAdmin(id) {
