@@ -937,8 +937,17 @@ function loadOverview() {
     document.getElementById('ovClients').textContent = active;
   });
 
-  db.ref('sites').once('value').then(snap => {
-    document.getElementById('ovSites').textContent = snap.numChildren();
+  // FIX: node "sites" haiandikwi na sehemu yoyote ya mfumo - ilikuwa
+  // itaonyesha "—" milele. Sasa tunahesabu MAENEO TOFAUTI ya wateja
+  // halisi (data inayotumika kweli), badala ya node isiyo na maana.
+  db.ref('clients').once('value').then(snap => {
+    const uniqueSites = new Set();
+    snap.forEach(c => {
+      const cl = c.val();
+      const loc = cl.location || cl.site || cl.eneo;
+      if (loc) uniqueSites.add(loc.toLowerCase().trim());
+    });
+    document.getElementById('ovSites').textContent = uniqueSites.size;
   });
 
   db.ref('assignments').once('value').then(snap => {
@@ -1413,7 +1422,7 @@ function loadGuardsOwner() {
       return `<tr>
         <td><strong>${g.name || '—'}</strong></td>
         <td style="font-size:12px;color:var(--muted);">${g.phone || '—'}</td>
-        <td>${g.site || '—'}</td>
+        <td>${g.station || '—'}</td>
         <td><span class="badge ${online ? 'badge-emerald' : 'badge-red'}">${online ? '🟢 Online' : '⚪ Offline'}</span></td>
       </tr>`;
     }).join('');
