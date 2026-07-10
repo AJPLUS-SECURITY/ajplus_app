@@ -1301,12 +1301,16 @@ function loadAdmins() {
   const tbody = document.getElementById('adminsTableBody');
   tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Inapakia...</p></div></td></tr>`;
 
-  // FIX: awali ilitafuta role==='admin' pekee - Supervisor hakuonekana kamwe
-  // hata kama aliundwa sahihi. Sasa tunavuta Admin na Supervisor wote pamoja.
-  Promise.all([
+  // FIX: sasisha token kwa nguvu kabla ya kusoma - inazuia permission_denied
+  // ya "token iliyopitwa na muda" (ona maelezo kwenye addNewAdmin)
+  const tokenRefresh = firebase.auth().currentUser
+    ? firebase.auth().currentUser.getIdToken(true)
+    : Promise.resolve();
+
+  tokenRefresh.then(() => Promise.all([
     db.ref('users').orderByChild('role').equalTo('admin').once('value'),
     db.ref('users').orderByChild('role').equalTo('supervisor').once('value'),
-  ]).then(([adminSnap, supSnap]) => {
+  ])).then(([adminSnap, supSnap]) => {
     allAdminsData = [];
     adminSnap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
     supSnap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
@@ -1374,6 +1378,12 @@ function addNewAdmin() {
   const btn = document.getElementById('addAdminBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Inahifadhi...';
 
+  // FIX MUHIMU: baada ya kukaa muda ukiwa umeingia (hasa na mtandao usio
+  // imara), Firebase ID token inaweza "kupitwa na muda" kimya kimya bila
+  // dalili yoyote - inayosababisha PERMISSION_DENIED hata kama una ruhusa
+  // kamili. Kusasisha token kwa nguvu (force refresh) kabla ya operesheni
+  // hii muhimu kunahakikisha daima tunatumia token mpya, halali.
+  firebase.auth().currentUser.getIdToken(true).then(() => {
   secondaryApp.auth().createUserWithEmailAndPassword(email, pass)
     .then(cred => {
       const uid = cred.user.uid;
@@ -1400,6 +1410,11 @@ function addNewAdmin() {
       errEl.style.display = 'block';
     })
     .finally(() => { btn.disabled = false; btn.textContent = '✅ Hifadhi Admin'; });
+  }).catch(err => {
+    errEl.textContent = '❌ Tatizo la session: ' + err.message + ' — Toka na ingia tena.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = '✅ Hifadhi Admin';
+  });
 }
 
 // FIX MPYA: Owner sasa anaweza kuona orodha ya Walinzi (Guards) moja kwa moja
