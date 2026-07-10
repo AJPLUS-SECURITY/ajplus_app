@@ -928,6 +928,12 @@
      INITIALIZE
   ==================================================== */
   function initDashboard() {
+    // FIX MUHIMU: onAuthStateChanged inaweza kupiga tena zaidi ya mara moja -
+    // bila ulinzi huu, listeners za .on('value') zilikuwa zinaongezeka kila
+    // mara, hatimaye kivinjari kinaganda baada ya muda wa kutumia mfumo.
+    if (window.__ajplusSupervisorInitialized) return;
+    window.__ajplusSupervisorInitialized = true;
+
     loadStats();
     loadOBReports();
     loadReports();

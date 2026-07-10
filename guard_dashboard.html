@@ -1614,8 +1614,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         startGPS();
 
-        // ASSIGNMENT LISTENER
-        
+        // FIX MUHIMU: Hii ilikuwa NJE ya eneo hili, ikitumia 'user.uid'
+        // isiyofahamika huko (nje ya onAuthStateChanged). Hitilafu hiyo
+        // (ReferenceError) ilikuwa inazuia FUNCTIONS 43 ZILIZOFUATA
+        // (Patrol, Gate, Incidents, Vehicle, Keys, Property, GPS, n.k.)
+        // zisisajiliwe kabisa - Guard Dashboard nzima ilikuwa imevunjika
+        // kimya kimya. Sasa iko mahali sahihi, ambapo 'user' inatambulika.
+        db.ref('users/' + user.uid + '/currentAssignment').on('value', snap => {
+          const asgn = snap.val();
+          if (asgn) {
+            const elName = document.getElementById('myClientName');
+            const elSite = document.getElementById('myClientSite');
+            if (elName) elName.textContent = asgn.clientName;
+            if (elSite) elSite.textContent = asgn.clientSite;
+            currentSite = asgn.clientSite; // Hutumika kwenye OB reports
+          }
+        });
 
     });
 
@@ -1623,25 +1637,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
   });
-
-/*
-================================================================
-  JINSI GUARD ANAVYOSOMA ASSIGNMENT YAKE — Ongeza kwenye guard_dashboard.html
-  
-  Kwenye DOMContentLoaded au baada ya auth, ongeza:
-  ================================================================ */
-  
-  db.ref('users/' + user.uid + '/currentAssignment').on('value', snap => {
-    const asgn = snap.val();
-    if (asgn) {
-      // Guard anaona client wake
-      document.getElementById('myClientName').textContent = asgn.clientName;
-      document.getElementById('myClientSite').textContent = asgn.clientSite;
-      currentSite = asgn.clientSite; // Hutumika kwenye OB reports
-    }
-  });
-  
-
 
 /* ====================================================
    GPS — Live Tracking

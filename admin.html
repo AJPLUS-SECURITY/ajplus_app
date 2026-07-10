@@ -1752,6 +1752,18 @@ function setupTheme() {
 }
 
 function initDashboard() {
+  // FIX MUHIMU: onAuthStateChanged inaweza kupiga tena zaidi ya mara moja
+  // wakati wa kikao kimoja (token refresh, mtandao kukatika-kaunga, n.k).
+  // Bila ulinzi huu, kila mara ikipigwa, ilikuwa inaongeza listeners MPYA
+  // (.on('value')) juu ya zile za zamani BILA kuzifuta - baada ya muda
+  // listeners zinazidi kuongezeka, kila update ya data inasababisha
+  // mahesabu mengi zaidi na zaidi, hatimaye kivinjari kinaganda kabisa.
+  if (window.__ajplusDashboardInitialized) {
+    console.log('[INIT] Dashboard tayari imeshaanzishwa - kuruka kuzuia listeners za nakala.');
+    return;
+  }
+  window.__ajplusDashboardInitialized = true;
+
   console.log('[INIT] Dashboard starting...');
   setupTheme();
   loadStats();
