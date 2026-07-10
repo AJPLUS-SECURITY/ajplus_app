@@ -1672,6 +1672,15 @@ let allAsgnData     = [];
 let allReportsData  = [];
 let asgnFilter      = 'all';
 
+// FIX MUHIMU: bila flags hizi, renderGuardsTable/renderClientsTable/
+// renderReportsTable zilikuwa zikiingia MZUNGUKO USIOISHA (infinite
+// recursion) node husika ikiwa TUPU kabisa - kila jaribio lisilofanikiwa
+// lilijiita tena mara moja, milele, likizidisha maombi kwa Firebase kwa
+// kasi kubwa hadi kivinjari/kifaa kuganda kabisa ndani ya sekunde chache.
+let guardsFetched   = false;
+let clientsFetched  = false;
+let reportsFetched  = false;
+
 /* --- Pending approval state --- */
 let approvalClientId   = null;
 let approvalClientData = null;
@@ -2032,7 +2041,8 @@ function renderGuardsTable(filter = '') {
   if (!tbody) return;
 
   /* If no data yet and db available, fetch now */
-  if (allGuardsData.length === 0 && db) {
+  if (!guardsFetched && db) {
+    guardsFetched = true;
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>⏳ Inapakia guards...</p></div></td></tr>`;
     /* Try guards/ node first, then fallback to users/ with role:guard */
     db.ref('guards').once('value').then(snap => {
@@ -2051,6 +2061,8 @@ function renderGuardsTable(filter = '') {
         });
       }
       renderGuardsTable(filter);
+    }).catch(err => {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
     });
     return;
   }
@@ -2198,12 +2210,15 @@ function renderClientsTable(filter = '') {
   if (!tbody) return;
 
   /* If no data yet and db available, fetch now */
-  if (allClientsData.length === 0 && db) {
+  if (!clientsFetched && db) {
+    clientsFetched = true;
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>⏳ Inapakia wateja...</p></div></td></tr>`;
     db.ref('clients').once('value').then(snap => {
       allClientsData = [];
       snap.forEach(c => allClientsData.push({ id: c.key, ...c.val() }));
       renderClientsTable(filter);
+    }).catch(err => {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
     });
     return;
   }
@@ -3100,12 +3115,15 @@ function renderReportsTable(filter = '') {
   if (!tbody) return;
 
   /* If no data yet and db available, fetch now */
-  if (allReportsData.length === 0 && db) {
+  if (!reportsFetched && db) {
+    reportsFetched = true;
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>⏳ Inapakia ripoti...</p></div></td></tr>`;
     db.ref('reports').orderByChild('timestamp').limitToLast(100).once('value').then(snap => {
       allReportsData = [];
       snap.forEach(c => allReportsData.push({ id: c.key, ...c.val() }));
       renderReportsTable(filter);
+    }).catch(err => {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>❌ Imeshindwa kupakia: ${err.message}</p></div></td></tr>`;
     });
     return;
   }
