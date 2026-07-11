@@ -2083,7 +2083,7 @@ function loadGateData() {
       if (!insideBody || !todayBody) return;
 
       let allEntries = [];
-      snap.forEach(c => allEntries.push({ key: c.key, ...c.val() }));
+      snap.forEach(c => { allEntries.push({ key: c.key, ...c.val() }); });
       allEntries.reverse();
 
       const todayEntries = allEntries.filter(e =>
@@ -2208,7 +2208,7 @@ function loadPatrolData() {
         return;
       }
       const arr = [];
-      snap.forEach(c => arr.push(c.val()));
+      snap.forEach(c => { arr.push(c.val()); });
       arr.reverse().forEach(r => {
         const bc = r.status === 'Salama' ? 'badge-in' : r.status.includes('Tatizo') ? 'badge-urgent' : 'badge-warning';
         tbody.innerHTML += `
@@ -2299,7 +2299,7 @@ function loadIncidentData() {
       return;
     }
     const arr = [];
-    snap.forEach(c => arr.push({ key: c.key, ...c.val() }));
+    snap.forEach(c => { arr.push({ key: c.key, ...c.val() }); });
     arr.reverse().forEach(r => {
       const sc = r.severity?.includes("Critical") ? "badge-urgent"
                : r.severity?.includes("Major")    ? "badge-danger"
@@ -2425,7 +2425,7 @@ function loadVehicleData() {
       return;
     }
     const arr = [];
-    snap.forEach(c => arr.push({ key: c.key, ...c.val() }));
+    snap.forEach(c => { arr.push({ key: c.key, ...c.val() }); });
     arr.reverse().forEach(v => {
       tbody.innerHTML += `
         <tr>
@@ -2511,7 +2511,7 @@ function loadKeysData() {
     }
 
     const arr = [];
-    snap.forEach(c => arr.push({ key: c.key, ...c.val() }));
+    snap.forEach(c => { arr.push({ key: c.key, ...c.val() }); });
     arr.reverse();
 
     const unreturned = arr.filter(k => k.action === 'Imetolewa' && !k.timeIn);
@@ -2611,7 +2611,7 @@ function loadPropertyData() {
       return;
     }
     const arr = [];
-    snap.forEach(c => arr.push(c.val()));
+    snap.forEach(c => { arr.push(c.val()); });
     arr.reverse().forEach(p => {
       tbody.innerHTML += `
         <tr>

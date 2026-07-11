@@ -1266,7 +1266,7 @@ function loadRevenuePage() {
   /* Payroll total for current month */
   db.ref('guards').once('value').then(gsnap => {
     const guards = [];
-    gsnap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+    gsnap.forEach(c => { guards.push({ id: c.key, ...c.val() }); });
     const promises = guards.map(g => db.ref(`payroll/${g.id}/${month}`).once('value').then(ps => ({ guard: g, p: ps.val() })));
     Promise.all(promises).then(results => {
       let payrollTotal = 0;
@@ -1312,8 +1312,8 @@ function loadAdmins() {
     db.ref('users').orderByChild('role').equalTo('supervisor').once('value'),
   ])).then(([adminSnap, supSnap]) => {
     allAdminsData = [];
-    adminSnap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
-    supSnap.forEach(c => allAdminsData.push({ id: c.key, ...c.val() }));
+    adminSnap.forEach(c => { allAdminsData.push({ id: c.key, ...c.val() }); });
+    supSnap.forEach(c => { allAdminsData.push({ id: c.key, ...c.val() }); });
     allAdminsData.sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
 
     if (allAdminsData.length === 0) {
@@ -1425,7 +1425,7 @@ function loadGuardsOwner() {
 
   db.ref('guards').once('value').then(snap => {
     const guards = [];
-    snap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { guards.push({ id: c.key, ...c.val() }); });
 
     if (guards.length === 0) {
       tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="icon">👮</div><p>Hakuna mlinzi bado.</p></div></td></tr>`;
@@ -1499,7 +1499,7 @@ function getReportData(month) {
     });
 
     const guards = [];
-    guardsSnap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+    guardsSnap.forEach(c => { guards.push({ id: c.key, ...c.val() }); });
 
     let clientsActive = 0;
     clientsSnap.forEach(c => { if (['active','approved'].includes((c.val().status||'').toLowerCase())) clientsActive++; });

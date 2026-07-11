@@ -900,21 +900,21 @@ function loadAllReports() {
     db.ref("patrol_logs").orderByChild("guardId").equalTo(guardId)
       .limitToLast(200).on("value", snap => {
         const items = [];
-        snap.forEach(c => items.push({ _key:c.key, _type:"patrol", ...c.val() }));
+        snap.forEach(c => { items.push({ _key:c.key, _type:"patrol", ...c.val() }); });
         merge("patrol", items);
       });
 
     db.ref("incidents").orderByChild("guardId").equalTo(guardId)
       .limitToLast(100).on("value", snap => {
         const items = [];
-        snap.forEach(c => items.push({ _key:c.key, _type:"incident", ...c.val() }));
+        snap.forEach(c => { items.push({ _key:c.key, _type:"incident", ...c.val() }); });
         merge("incident", items);
       });
 
     db.ref("gate_entries").orderByChild("guardId").equalTo(guardId)
       .limitToLast(200).on("value", snap => {
         const items = [];
-        snap.forEach(c => items.push({ _key:c.key, _type:"gate", ...c.val() }));
+        snap.forEach(c => { items.push({ _key:c.key, _type:"gate", ...c.val() }); });
         merge("gate", items);
       });
   }
@@ -1072,7 +1072,7 @@ function loadInvoices() {
         return;
       }
       const invs = [];
-      snap.forEach(c => invs.push({ id: c.key, ...c.val() }));
+      snap.forEach(c => { invs.push({ id: c.key, ...c.val() }); });
       invs.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
 
       let totalUnpaid = 0;

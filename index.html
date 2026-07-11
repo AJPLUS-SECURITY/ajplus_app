@@ -1910,7 +1910,7 @@ function loadStats() {
     snap.forEach(c => { const t = c.val().timestamp; if (t && new Date(t).toDateString() === today) n++; });
     document.getElementById('valReports').textContent = n;
     allReportsData = [];
-    snap.forEach(c => allReportsData.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { allReportsData.push({ id: c.key, ...c.val() }); });
     /* Always re-render reports table when data changes */
     renderReportsTable();
     console.log('[AJPLUS] Reports (general) loaded:', allReportsData.length);
@@ -1992,7 +1992,7 @@ function loadRecentActivity() {
   /* Combine patrol logs + incidents for dashboard feed */
   db.ref('patrol_logs').once('value').then(snap => {
     let rows = [];
-    snap.forEach(siteNode => siteNode.forEach(c => rows.push({ _type:'patrol', ...c.val() })));
+    snap.forEach(siteNode => siteNode.forEach(c => { rows.push({ _type:'patrol', ...c.val() }); }));
     rows.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
     rows = rows.slice(0, 5);
 
@@ -2032,7 +2032,7 @@ function renderGuardsTable(filter = '') {
     /* Try guards/ node first, then fallback to users/ with role:guard */
     db.ref('guards').once('value').then(snap => {
       allGuardsData = [];
-      snap.forEach(c => allGuardsData.push({ id: c.key, ...c.val() }));
+      snap.forEach(c => { allGuardsData.push({ id: c.key, ...c.val() }); });
       if (allGuardsData.length === 0) {
         /* Fallback: check users/ node for guards */
         return db.ref('users').orderByChild('role').equalTo('guard').once('value').then(uSnap => {
@@ -2149,7 +2149,7 @@ function addGuard() {
       if (db) {
         db.ref('guards').once('value').then(snap => {
           allGuardsData = [];
-          snap.forEach(c => allGuardsData.push({ id: c.key, ...c.val() }));
+          snap.forEach(c => { allGuardsData.push({ id: c.key, ...c.val() }); });
           renderGuardsTable();
           document.getElementById('valGuards').textContent = allGuardsData.length;
         });
@@ -2197,7 +2197,7 @@ function renderClientsTable(filter = '') {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>⏳ Inapakia wateja...</p></div></td></tr>`;
     db.ref('clients').once('value').then(snap => {
       allClientsData = [];
-      snap.forEach(c => allClientsData.push({ id: c.key, ...c.val() }));
+      snap.forEach(c => { allClientsData.push({ id: c.key, ...c.val() }); });
       renderClientsTable(filter);
     });
     return;
@@ -2906,7 +2906,7 @@ function loadOBGate() {
   db.ref('gate_entries').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(r => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse().forEach(r => {
       const sc = r.status==='Inside' ? 'badge-green' : 'badge-muted';
       tbody.innerHTML += `<tr><td><strong>${r.name||'—'}</strong></td><td>${r.idNumber||'—'}</td><td>${r.purpose||'—'}</td><td>${r.plate||'—'}</td><td>${r.timeIn||'—'}</td><td>${r.timeOut||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><span class="badge ${sc}">${r.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td><td>${r.guard||'—'}</td></tr>`;
     });
@@ -2920,7 +2920,7 @@ function loadOBPatrol() {
   db.ref('patrol_logs').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(r => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse().forEach(r => {
       const sc = r.status==='Salama' ? 'badge-green' : r.status?.includes('Tatizo') ? 'badge-red' : 'badge-gold';
       tbody.innerHTML += `<tr><td>${r.time||'—'}<br><small style="color:var(--muted);font-size:10px;">${r.timestamp?new Date(r.timestamp).toLocaleDateString('sw-TZ'):''}</small></td><td><strong>${r.guard||'—'}</strong></td><td>${r.site||'—'}</td><td>${r.area||'—'}</td><td><span class="badge ${sc}">${r.status||'—'}</span></td><td>${r.weather||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.notes||'—'}</td></tr>`;
     });
@@ -2934,7 +2934,7 @@ function loadOBIncidents() {
   db.ref('incidents').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">✅</div><p>Hakuna matukio.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push({k:c.key,sid:siteNode.key,...c.val()}))); rows.reverse().forEach(r => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push({k:c.key,sid:siteNode.key,...c.val()}); })); rows.reverse().forEach(r => {
       const isCrit = r.severity?.includes('Critical')||r.severity?.includes('Major');
       const sc = isCrit ? 'badge-red' : r.severity?.includes('Moderate') ? 'badge-gold' : 'badge-muted';
       tbody.innerHTML += `<tr><td>${r.date||'—'} ${r.time||''}</td><td>${r.location||'—'}</td><td>${r.type||'—'}</td><td><span class="badge ${sc}">${r.severity||'—'}</span></td><td><strong>${r.guard||'—'}</strong></td><td>${r.police||'Hapana'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><button class="btn btn-blue btn-sm" onclick="viewIncident('${r.sid}','${r.k}')">👁</button></td></tr>`;
@@ -2956,7 +2956,7 @@ function loadOBVehicles() {
   db.ref('vehicle_logs').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna magari.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(v => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse().forEach(v => {
       const sc = v.status==='Inside' ? 'badge-green' : 'badge-muted';
       tbody.innerHTML += `<tr><td><strong>${v.plate||'—'}</strong></td><td>${v.driver||'—'}</td><td>${v.cargo||'—'}</td><td>${v.timeIn||'—'}</td><td>${v.timeOut||'—'}</td><td>${v.auth||'—'}</td><td>${obGPS(v.lat,v.lng)}</td><td>${obPhoto(v.photoURL)}</td><td><span class="badge ${sc}">${v.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td></tr>`;
     });
@@ -2971,7 +2971,7 @@ function loadOBKeys() {
   db.ref('key_logs').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; alertEl.style.display='none'; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse();
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse();
     const out = rows.filter(r => r.action==='Imetolewa' && !r.timeIn);
     if (out.length > 0) {
       alertEl.style.display = 'block';
@@ -3099,7 +3099,7 @@ function renderReportsTable(filter = '') {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>⏳ Inapakia ripoti...</p></div></td></tr>`;
     db.ref('reports').orderByChild('timestamp').limitToLast(100).once('value').then(snap => {
       allReportsData = [];
-      snap.forEach(c => allReportsData.push({ id: c.key, ...c.val() }));
+      snap.forEach(c => { allReportsData.push({ id: c.key, ...c.val() }); });
       renderReportsTable(filter);
     });
     return;
@@ -3286,7 +3286,7 @@ function loadInvoices() {
       return;
     }
     const rows = [];
-    snap.forEach(c => rows.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { rows.push({ id: c.key, ...c.val() }); });
     rows.reverse();
 
     tbody.innerHTML = rows.map(inv => {
@@ -3328,7 +3328,7 @@ function loadGuardPayroll() {
       return;
     }
     const guards = [];
-    snap.forEach(c => guards.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { guards.push({ id: c.key, ...c.val() }); });
 
     /* Load payroll data for each guard this month */
     const promises = guards.map(g =>
