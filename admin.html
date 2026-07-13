@@ -2465,6 +2465,7 @@ function loadPendingClients() {
         <td style="display:flex;gap:6px;">
           <button class="btn btn-teal btn-sm" onclick="openApproveModal('${c.id}')">✅ Idhinisha</button>
           <button class="btn btn-red btn-sm" onclick="rejectClient('${c.id}','${safeName}')">❌ Kataa</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteClientRequest('${c.id}','${safeName}','${c._source}')">🗑️ Futa</button>
         </td>
       </tr>`;
     }).join('');
@@ -2632,6 +2633,24 @@ function rejectClient(id, name, reason) {
   db.ref().update(updates)
     .then(() => { showToast(`Ombi la ${name} limekataliwa.`, 'info'); loadPendingClients(); })
     .catch(() => showToast('Imeshindwa.', 'error'));
+}
+
+/* FIX MPYA: "Futa" - inafuta ombi KABISA (hard delete) kutoka database.
+   Tofauti na "Kataa" (ambayo inaacha rekodi ikiwa na status "rejected"
+   kwa ajili ya audit trail), hii ni kwa data chafu/duplicate ambayo
+   haihitaji kubaki kwenye mfumo kabisa. Haiwezi kurudishwa. */
+function deleteClientRequest(id, name, source) {
+  if (!confirm(`Una uhakika unataka KUFUTA KABISA ombi la "${name}"?\n\nHatua hii HAIWEZI kurudishwa - siyo sawa na "Kataa". Tumia hii tu kwa data chafu au maombi ya marudufu (duplicate).`)) return;
+  const updates = {};
+  if (source === 'pending_registrations') {
+    updates[`pending_registrations/${id}`] = null;
+  } else {
+    updates[`clients/${id}`] = null;
+    updates[`users/${id}`]   = null;
+  }
+  db.ref().update(updates)
+    .then(() => { showToast(`Ombi la "${name}" limefutwa kabisa.`, 'info'); loadPendingClients(); })
+    .catch(err => showToast('Imeshindwa kufuta: ' + err.message, 'error'));
 }
 
 /* ================================================================
