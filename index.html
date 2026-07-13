@@ -1766,7 +1766,10 @@ function initDashboard() {
   renderGuards();
   renderClientsTable();
   loadReports();
-  initCharts();
+  /* FIX PERFORMANCE: initCharts() iliyokuwa inachora chati mara moja
+     dashboard inapofunguka imeondolewa hapa - Chart.js ni "nzito" kwa
+     simu. openPage() tayari ina updateCharts() inayochora chati pale
+     tu mtu anapofungua tab ya Analytics - angalia chini. */
   listenPendingBadge();
   startChatInbox();
   listenPanicAlerts();
@@ -1904,7 +1907,10 @@ function loadStats() {
   });
 
   /* Listen to 'reports' node (general reports) */
-  db.ref('reports').on('value', snap => {
+  /* FIX PERFORMANCE: iliyokuwa inapakua rekodi ZOTE za historia yote kila
+     wakati - sasa ina kikomo cha rekodi 300 za mwisho ili isiendelee
+     kuwa nzito kadri miezi inavyopita na data inavyoongezeka. */
+  db.ref('reports').limitToLast(300).on('value', snap => {
     const today = new Date().toDateString();
     let n = 0;
     snap.forEach(c => { const t = c.val().timestamp; if (t && new Date(t).toDateString() === today) n++; });
@@ -1916,8 +1922,15 @@ function loadStats() {
     console.log('[AJPLUS] Reports (general) loaded:', allReportsData.length);
   });
 
-  /* Also listen to patrol_logs for today's count */
-  db.ref('patrol_logs').on('value', snap => {
+  /* FIX PERFORMANCE MUHIMU: patrol_logs na incidents zilikuwa zina
+     .on('value') za kudumu zinazopakua site ZOTE + rekodi ZOTE za
+     historia kila wakati kuna mabadiliko yoyote popote - hii ndiyo
+     chanzo kikubwa cha "kuganda" kwenye simu, hasa baada ya guards
+     kuanza kutumia mfumo kila siku (data inaongezeka bila mwisho).
+     Sasa ni .once() - inapakia mara moja tu wakati Dashboard inafunguka,
+     siyo kila mabadiliko. Data mpya itaonekana ukifungua upya Dashboard
+     au kubonyeza Refresh, siyo moja kwa moja kwa sekunde. */
+  db.ref('patrol_logs').once('value').then(snap => {
     const today = new Date().toDateString();
     let extras = [];
     snap.forEach(siteNode => siteNode.forEach(c => {
@@ -1934,14 +1947,12 @@ function loadStats() {
         });
       }
     }));
-    /* Merge patrol logs with reports (avoid duplicates by _source) */
     allReportsData = allReportsData.filter(r => r._source !== 'patrol_logs');
     allReportsData = [...allReportsData, ...extras];
     renderReportsTable();
   });
 
-  /* Also listen to incidents */
-  db.ref('incidents').on('value', snap => {
+  db.ref('incidents').once('value').then(snap => {
     const today = new Date().toDateString();
     let extras = [];
     snap.forEach(siteNode => siteNode.forEach(c => {
@@ -2906,10 +2917,12 @@ function loadOBGate() {
   db.ref('gate_entries').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse().forEach(r => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); }));
+    const html = rows.reverse().map(r => {
       const sc = r.status==='Inside' ? 'badge-green' : 'badge-muted';
-      tbody.innerHTML += `<tr><td><strong>${r.name||'—'}</strong></td><td>${r.idNumber||'—'}</td><td>${r.purpose||'—'}</td><td>${r.plate||'—'}</td><td>${r.timeIn||'—'}</td><td>${r.timeOut||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><span class="badge ${sc}">${r.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td><td>${r.guard||'—'}</td></tr>`;
-    });
+      return `<tr><td><strong>${r.name||'—'}</strong></td><td>${r.idNumber||'—'}</td><td>${r.purpose||'—'}</td><td>${r.plate||'—'}</td><td>${r.timeIn||'—'}</td><td>${r.timeOut||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><span class="badge ${sc}">${r.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td><td>${r.guard||'—'}</td></tr>`;
+    }).join('');
+    tbody.innerHTML = html;
   });
 }
 
@@ -2920,10 +2933,12 @@ function loadOBPatrol() {
   db.ref('patrol_logs').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse().forEach(r => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); }));
+    const html = rows.reverse().map(r => {
       const sc = r.status==='Salama' ? 'badge-green' : r.status?.includes('Tatizo') ? 'badge-red' : 'badge-gold';
-      tbody.innerHTML += `<tr><td>${r.time||'—'}<br><small style="color:var(--muted);font-size:10px;">${r.timestamp?new Date(r.timestamp).toLocaleDateString('sw-TZ'):''}</small></td><td><strong>${r.guard||'—'}</strong></td><td>${r.site||'—'}</td><td>${r.area||'—'}</td><td><span class="badge ${sc}">${r.status||'—'}</span></td><td>${r.weather||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.notes||'—'}</td></tr>`;
-    });
+      return `<tr><td>${r.time||'—'}<br><small style="color:var(--muted);font-size:10px;">${r.timestamp?new Date(r.timestamp).toLocaleDateString('sw-TZ'):''}</small></td><td><strong>${r.guard||'—'}</strong></td><td>${r.site||'—'}</td><td>${r.area||'—'}</td><td><span class="badge ${sc}">${r.status||'—'}</span></td><td>${r.weather||'—'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.notes||'—'}</td></tr>`;
+    }).join('');
+    tbody.innerHTML = html;
   });
 }
 
@@ -2934,11 +2949,13 @@ function loadOBIncidents() {
   db.ref('incidents').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">✅</div><p>Hakuna matukio.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push({k:c.key,sid:siteNode.key,...c.val()}); })); rows.reverse().forEach(r => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push({k:c.key,sid:siteNode.key,...c.val()}); }));
+    const html = rows.reverse().map(r => {
       const isCrit = r.severity?.includes('Critical')||r.severity?.includes('Major');
       const sc = isCrit ? 'badge-red' : r.severity?.includes('Moderate') ? 'badge-gold' : 'badge-muted';
-      tbody.innerHTML += `<tr><td>${r.date||'—'} ${r.time||''}</td><td>${r.location||'—'}</td><td>${r.type||'—'}</td><td><span class="badge ${sc}">${r.severity||'—'}</span></td><td><strong>${r.guard||'—'}</strong></td><td>${r.police||'Hapana'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><button class="btn btn-blue btn-sm" onclick="viewIncident('${r.sid}','${r.k}')">👁</button></td></tr>`;
-    });
+      return `<tr><td>${r.date||'—'} ${r.time||''}</td><td>${r.location||'—'}</td><td>${r.type||'—'}</td><td><span class="badge ${sc}">${r.severity||'—'}</span></td><td><strong>${r.guard||'—'}</strong></td><td>${r.police||'Hapana'}</td><td>${obGPS(r.lat,r.lng)}</td><td>${obPhoto(r.photoURL)}</td><td><button class="btn btn-blue btn-sm" onclick="viewIncident('${r.sid}','${r.k}')">👁</button></td></tr>`;
+    }).join('');
+    tbody.innerHTML = html;
   });
 }
 
@@ -2956,10 +2973,12 @@ function loadOBVehicles() {
   db.ref('vehicle_logs').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna magari.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); })); rows.reverse().forEach(v => {
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); }));
+    const html = rows.reverse().map(v => {
       const sc = v.status==='Inside' ? 'badge-green' : 'badge-muted';
-      tbody.innerHTML += `<tr><td><strong>${v.plate||'—'}</strong></td><td>${v.driver||'—'}</td><td>${v.cargo||'—'}</td><td>${v.timeIn||'—'}</td><td>${v.timeOut||'—'}</td><td>${v.auth||'—'}</td><td>${obGPS(v.lat,v.lng)}</td><td>${obPhoto(v.photoURL)}</td><td><span class="badge ${sc}">${v.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td></tr>`;
-    });
+      return `<tr><td><strong>${v.plate||'—'}</strong></td><td>${v.driver||'—'}</td><td>${v.cargo||'—'}</td><td>${v.timeIn||'—'}</td><td>${v.timeOut||'—'}</td><td>${v.auth||'—'}</td><td>${obGPS(v.lat,v.lng)}</td><td>${obPhoto(v.photoURL)}</td><td><span class="badge ${sc}">${v.status==='Inside'?'🟢 Ndani':'🔴 Nje'}</span></td></tr>`;
+    }).join('');
+    tbody.innerHTML = html;
   });
 }
 
@@ -2977,10 +2996,10 @@ function loadOBKeys() {
       alertEl.style.display = 'block';
       alertEl.textContent = `⚠️ Funguo ${out.length} hazijarudishwa: ${out.map(r=>r.keyName).join(', ')}`;
     } else { alertEl.style.display = 'none'; }
-    rows.forEach(k => {
+    tbody.innerHTML = rows.map(k => {
       const sc = k.action==='Imetolewa' ? 'badge-gold' : 'badge-green';
-      tbody.innerHTML += `<tr><td><strong>${k.keyName||'—'}</strong></td><td>${k.recipient||'—'}</td><td>${k.timeOut||'—'}</td><td>${k.timeIn||'—'}</td><td><span class="badge ${sc}">${k.action||'—'}</span></td><td>${obGPS(k.lat,k.lng)}</td><td>${k.guard||'—'}</td></tr>`;
-    });
+      return `<tr><td><strong>${k.keyName||'—'}</strong></td><td>${k.recipient||'—'}</td><td>${k.timeOut||'—'}</td><td>${k.timeIn||'—'}</td><td><span class="badge ${sc}">${k.action||'—'}</span></td><td>${obGPS(k.lat,k.lng)}</td><td>${k.guard||'—'}</td></tr>`;
+    }).join('');
   });
 }
 
@@ -2991,9 +3010,10 @@ function loadOBProperty() {
   db.ref('property_passes').once('value').then(snap => {
     tbody.innerHTML = '';
     if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>Hakuna rekodi.</p></div></td></tr>`; return; }
-    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => rows.push(c.val()))); rows.reverse().forEach(p => {
-      tbody.innerHTML += `<tr><td><strong>${p.item||'—'}</strong></td><td>${p.qty||'—'}</td><td>${p.carrier||'—'}</td><td>${p.authBy||'—'}</td><td>${p.ref||'—'}</td><td>${p.time||'—'}</td><td>${obGPS(p.lat,p.lng)}</td><td>${obPhoto(p.photoURL)}</td><td>${p.guard||'—'}</td></tr>`;
-    });
+    const rows=[]; snap.forEach(siteNode => siteNode.forEach(c => { rows.push(c.val()); }));
+    tbody.innerHTML = rows.reverse().map(p => {
+      return `<tr><td><strong>${p.item||'—'}</strong></td><td>${p.qty||'—'}</td><td>${p.carrier||'—'}</td><td>${p.authBy||'—'}</td><td>${p.ref||'—'}</td><td>${p.time||'—'}</td><td>${obGPS(p.lat,p.lng)}</td><td>${obPhoto(p.photoURL)}</td><td>${p.guard||'—'}</td></tr>`;
+    }).join('');
   });
 }
 
@@ -3009,13 +3029,13 @@ function loadOBGuardsLive() {
     snap.forEach(c => { const g = {uid:c.key,...c.val()}; if (g.updatedAt && g.updatedAt > cutoff) guards.push(g); });
     guards.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     if (!guards.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>Hakuna guards online (dakika 15).</p></div></td></tr>`; return; }
-    guards.forEach(g => {
+    tbody.innerHTML = guards.map(g => {
       const mins = g.updatedAt ? Math.round((Date.now()-g.updatedAt)/60000) : null;
       const t = mins===null?'—':mins===0?'Sasa hivi':`Dakika ${mins} zilizopita`;
       const sc = mins!==null&&mins<=3?'badge-green':mins!==null&&mins<=8?'badge-gold':'badge-red';
       const sl = mins!==null&&mins<=3?'🟢 Online':mins!==null&&mins<=8?'🟡 Karibu':'🔴 Mbali';
-      tbody.innerHTML += `<tr><td><strong>${g.name||'—'}</strong></td><td>${g.site||'—'}</td><td>${obGPS(g.lat,g.lng)}</td><td style="font-size:12px;">${t}</td><td><span class="badge ${sc}">${sl}</span></td><td>${g.lat?`<a class="ob-gps-link" href="https://maps.google.com/?q=${g.lat},${g.lng}" target="_blank">🗺 Ona</a>`:'—'}</td></tr>`;
-    });
+      return `<tr><td><strong>${g.name||'—'}</strong></td><td>${g.site||'—'}</td><td>${obGPS(g.lat,g.lng)}</td><td style="font-size:12px;">${t}</td><td><span class="badge ${sc}">${sl}</span></td><td>${g.lat?`<a class="ob-gps-link" href="https://maps.google.com/?q=${g.lat},${g.lng}" target="_blank">🗺 Ona</a>`:'—'}</td></tr>`;
+    }).join('');
   });
 }
 
