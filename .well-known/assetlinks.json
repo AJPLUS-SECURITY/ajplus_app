@@ -3,6 +3,6 @@
   "target": {
     "namespace": "android_app",
     "package_name": "tz.co.ajplussecurity.twa",
-    "sha256_cert_fingerprints": ["51:1F:D0:09:65:88:4A:54:87:AC:D0:0A:A5:C0:E0:39:B1:38:E3:05:0F:C2:91:8D:14:BA:F2:69:D7:F7:39:F4"]
+    "sha256_cert_fingerprints": ["5E:03:E5:91:45:98:E3:F2:EC:F5:18:66:34:06:58:D8:00:4F:66:11:FD:EA:B2:E2:FF:60:B5:2A:0F:F7:C3:99"]
   }
 }]
